@@ -19,7 +19,7 @@
 
 from ctypes import \
         CDLL, POINTER, byref, \
-        c_void_p, c_char_p, c_int32, c_bool, c_uint32, c_uint64
+        c_void_p, c_char_p, c_int32, c_bool, c_uint32, c_uint64, Structure
 import json
 import logging
 import sys
@@ -44,11 +44,15 @@ DVOL_KEY = "docker-volume-vsphere"
 # all vmdks are opened with these flags
 VMDK_OPEN_FLAGS = 524312
 
-# Default kv side car alignment
-KV_ALIGN = 4096
-
-# Flag to track the version of Python on the platform
 is_64bits = False
+
+class disk_info(Structure):
+   _fields_ = [('size', c_uint64),
+               ('allocated', c_uint64),
+               ('delta_bytes', c_uint64),
+               ('reclaim_bytes', c_uint64),
+               ('flags', c_uint32),
+               ('epoch_bytes', c_uint32)]
 
 # Load the disk lib API library
 def load_disk_lib(lib_name):
@@ -63,7 +67,7 @@ def load_disk_lib(lib_name):
     return
 
 # Initialize disk lib interfaces
-def disk_lib_init():
+def init():
     global is_64bits
     global use_sidecar_create
 
@@ -83,6 +87,8 @@ def disk_lib_init():
                                             POINTER(c_uint64)]
        lib.DiskLib_DBGet.argtypes = [c_uint64, c_char_p, POINTER(c_char_p)]
        lib.DiskLib_DBSet.argtypes = [c_uint64, c_char_p, c_char_p]
+       lib.DiskLib_GetSize.argtypes = [c_uint64, c_uint32,
+                                       c_uint32, POINTER(disk_info)]
        # Check if this library supports create API
        try:
            lib.DiskLib_SidecarCreate.argtypes = [c_uint64, c_char_p, c_uint64,
@@ -106,7 +112,8 @@ def disk_lib_init():
                                             POINTER(c_uint32)]
        lib.DiskLib_DBGet.argtypes = [c_uint32, c_char_p, POINTER(c_char_p)]
        lib.DiskLib_DBSet.argtypes = [c_uint32, c_char_p, c_char_p]
-
+       lib.DiskLib_GetSize.argtypes = [c_uint32, c_uint32,
+                                       c_uint32, POINTER(disk_info)]
        # Check if this library supports create API
        try:
            lib.DiskLib_SidecarCreate.argtypes = [c_uint32, c_char_p, c_uint64,
@@ -128,11 +135,9 @@ def disk_lib_init():
     lib.DiskLib_SidecarMakeFileName.restype = c_char_p
     lib.DiskLib_DBGet.restype = c_uint32
     lib.DiskLib_DBSet.restype = c_uint32
+    lib.DiskLib_GetSize.restype = c_uint32
 
     return
-
-def kv_esx_init():
-   disk_lib_init()
 
 def get_uint(val):
    if is_64bits:
@@ -148,27 +153,28 @@ def disk_is_valid(dhandle):
 
 # Open a VMDK given its path, the VMDK is opened locked just to
 # ensure we have exclusive access and its not already in use.
-def vol_open_path(volpath):
+def open_disk(disk_path):
     dhandle = get_uint(0)
     ihandle = get_uint(0)
     key = c_uint32(0)
 
-    res = lib.DiskLib_OpenWithInfo(volpath.encode(), VMDK_OPEN_FLAGS,
+    res = lib.DiskLib_OpenWithInfo(disk_path.encode(), VMDK_OPEN_FLAGS,
                                    byref(key), byref(dhandle),
                                    byref(ihandle))
 
     if res != 0:
-        logging.warning("Open %s failed - %x", volpath, res)
+        logging.warning("Open %s failed - %x", disk_path, res)
 
     return dhandle
 
-# Create the side car for the volume identified by volpath.
-def create(volpath, kv_dict):
+# Create the side car for the volume identified by disk_path.
+def create_kv(disk_path):
     obj_handle = get_uint(0)
-    dhandle = vol_open_path(volpath)
+    dhandle = open_disk(disk_path)
 
     if not disk_is_valid(dhandle):
        return False
+
     if use_sidecar_create:
        res = lib.DiskLib_SidecarCreate(dhandle, DVOL_KEY.encode(),
                                        KV_CREATE_SIZE, KV_SIDECAR_CREATE,
@@ -178,70 +184,47 @@ def create(volpath, kv_dict):
                                      KV_SIDECAR_CREATE,
                                      byref(obj_handle))
     if res != 0:
-       logging.warning("Side car create for %s failed - %x", volpath, res)
+       logging.warning("Side car create for %s failed - %x", disk_path, res)
        lib.DiskLib_Close(dhandle)
        return False
 
     lib.DiskLib_SidecarClose(dhandle, DVOL_KEY.encode(), byref(obj_handle))
     lib.DiskLib_Close(dhandle)
 
-    return save(volpath, kv_dict)
+    return True
 
 # Delete the the side car for the given volume
-def delete(volpath):
-    dhandle = vol_open_path(volpath)
+def delete_kv(disk_path):
+    dhandle = open_disk(disk_path)
 
     if not disk_is_valid(dhandle):
        return False
     res = lib.DiskLib_SidecarDelete(dhandle, DVOL_KEY.encode())
     if res != 0:
-       logging.warning("Side car delete for %s failed - %x", volpath, res)
+       logging.warning("Side car delete for %s failed - %x", disk_path, res)
        lib.DiskLib_Close(dhandle)
        return False
 
     lib.DiskLib_Close(dhandle)
     return True
 
-# Align a given string to the specified block boundary.
-def align_str(kv_str, block):
-   # Align string to the next block boundary. The -1 is to accommodate
-   # a newline at the end of the string.
-   aligned_len = int((len(kv_str) + block - 1) / block) * block - 1
-   return '{:<{width}}\n'.format(kv_str, width=aligned_len)
+def get_info(disk_path):
+    dhandle = open_disk(disk_path)
 
+    if not disk_is_valid(dhandle):
+       return False
 
-# Load and return dictionary from the sidecar
-def load(volpath):
-    meta_file = lib.DiskLib_SidecarMakeFileName(volpath.encode(),
-                                                DVOL_KEY.encode())
+    sinfo = disk_info()
+    res = lib.DiskLib_GetSize(dhandle, 0, 0, byref(sinfo))
 
-    try:
-       with open(meta_file, "r") as fh:
-          kv_str = fh.read()
-    except:
-        logging.exception("Failed to access %s", meta_file)
-        return None
-
-    try:
-       return json.loads(kv_str)
-    except ValueError:
-       logging.exception("Failed to decode meta-data for %s", volpath);
+    if res != 0:
+       logging.warning("Failed to get size of disk - %x", disk_path, res)
+       lib.DiskLib_Close(dhandle)
        return None
 
+    lib.DiskLib_Close(dhandle)
+    return {'Size': str(sinfo.size), 'Allocated': str(sinfo.allocated)}
 
-# Save the dictionary to side car.
-def save(volpath, kv_dict):
-    meta_file = lib.DiskLib_SidecarMakeFileName(volpath.encode(),
-                                                DVOL_KEY.encode())
-
-    kv_str = json.dumps(kv_dict)
-
-    try:
-       with open(meta_file, "w") as fh:
-          fh.write(align_str(kv_str, KV_ALIGN))
-    except:
-        logging.exception("Failed to save meta-data for %s", volpath);
-        return False
-
-    return True
+def get_kv_name(disk_path):
+    return lib.DiskLib_SidecarMakeFileName(disk_path.encode(), DVOL_KEY.encode())
 

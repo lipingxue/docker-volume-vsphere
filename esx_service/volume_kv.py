@@ -19,8 +19,15 @@
 ## on the kv store. Currently uses side cars to keep KV pairs for
 ## a given volume.
 
-import kvESX
+import json
+import logging
+import sys
+import disk_ops
 
+# Default kv side car alignment
+KV_ALIGN = 4096
+
+# Flag to track the version of Python on the platform
 # All possible metadata keys for the volume. New keys should be added here as
 # constants pointing to strings.
 
@@ -64,14 +71,16 @@ DETACHED = 'detached'
 # Create a kv store object for this volume identified by vol_path
 # Create the side car or open if it exists.
 def init():
-    kvESX.kv_esx_init()
+   disk_ops.init()
 
 def create(vol_path, vol_meta):
     """
     Create a side car KV store for given vol_path.
     Return true if successful, false otherwise
     """
-    return kvESX.create(vol_path, vol_meta)
+    if disk_ops.create_kv(vol_path):
+       return save(vol_path, vol_meta)
+    return False
 
 
 def delete(vol_path):
@@ -79,7 +88,7 @@ def delete(vol_path):
     Delete a kv store object for this volume identified by vol_path.
     Return true if successful, false otherwise
     """
-    return kvESX.delete(vol_path)
+    return disk_ops.delete_kv(vol_path)
 
 
 def getAll(vol_path):
@@ -87,7 +96,7 @@ def getAll(vol_path):
     Return the entire meta-data for the given vol_path.
     Return true if successful, false otherwise
     """
-    return kvESX.load(vol_path)
+    return load(vol_path)
 
 
 def setAll(vol_path, vol_meta):
@@ -96,28 +105,28 @@ def setAll(vol_path, vol_meta):
     Return true if successful, false otherwise
     """
     if vol_meta:
-        return kvESX.save(vol_path, vol_meta)
+        return save(vol_path, vol_meta)
     # No data to save
     return True
 
 
 # Set a string value for a given key(index)
 def set_kv(vol_path, key, val):
-    vol_meta = kvESX.load(vol_path)
+    vol_meta = load(vol_path)
 
     if not vol_meta:
         return False
 
     vol_meta[key] = val
 
-    return kvESX.save(vol_path, vol_meta)
+    return save(vol_path, vol_meta)
 
 
 def get_kv(vol_path, key):
     """
     Return a string value for the given key, or None if the key is not present.
     """
-    vol_meta = kvESX.load(vol_path)
+    vol_meta = load(vol_path)
 
     if not vol_meta:
         return None
@@ -133,7 +142,7 @@ def remove(vol_path, key):
     Remove a key/value pair from the store. Return true on success, false on
     error.
     """
-    vol_meta = kvESX.load(vol_path)
+    vol_meta = load(vol_path)
 
     if not vol_meta:
         return False
@@ -141,4 +150,46 @@ def remove(vol_path, key):
     if key in vol_meta:
         del vol_meta[key]
 
-    return kvESX.save(vol_path, vol_meta)
+    return save(vol_path, vol_meta)
+
+
+# Align a given string to the specified block boundary.
+def align_str(kv_str, block):
+   # Align string to the next block boundary. The -1 is to accommodate
+   # a newline at the end of the string.
+   aligned_len = int((len(kv_str) + block - 1) / block) * block - 1
+   return '{:<{width}}\n'.format(kv_str, width=aligned_len)
+
+
+# Load and return dictionary from the kv
+def load(vol_path):
+    meta_file = disk_ops.get_kv_name(vol_path)
+
+    try:
+       with open(meta_file, "r") as fh:
+          kv_str = fh.read()
+    except:
+        logging.exception("Failed to access %s", meta_file)
+        return None
+
+    try:
+       return json.loads(kv_str)
+    except ValueError:
+       logging.exception("Failed to decode meta-data for %s", vol_path);
+       return None
+
+
+# Save the dictionary to kv.
+def save(vol_path, vol_meta):
+    meta_file = disk_ops.get_kv_name(vol_path)
+
+    kv_str = json.dumps(vol_meta)
+
+    try:
+       with open(meta_file, "w") as fh:
+          fh.write(align_str(kv_str, KV_ALIGN))
+    except:
+        logging.exception("Failed to save meta-data for %s", vol_path);
+        return False
+
+    return True
