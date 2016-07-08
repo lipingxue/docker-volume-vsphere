@@ -1,5 +1,5 @@
 #!/bin/sh
-# chkconfig: on 20 20
+# chkconfig: on 99 99
 
 #
 # Start and stop the storage operations daemon.
