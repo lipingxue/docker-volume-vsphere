@@ -276,7 +276,7 @@ def cleanup_vsan_devfs_path(devfs_path):
     try:
         os.remove(devfs_path)
         logging.debug("Unlinked %s", devfs_path)
-	return True
+        return True
     except OSError as ex:
         logging.error("Failed to remove backing device %s",
                       devfs_path, str(ex))

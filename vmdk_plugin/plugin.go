@@ -310,3 +310,8 @@ func (d *vmdkDriver) Unmount(r volume.Request) volume.Response {
 	}
 	return volume.Response{Err: ""}
 }
+
+// capabilities for the vsphere plugin
+func (d *vmdkDriver) Capabilities(r volume.Request) volume.Response {
+	return volume.Response{Capabilities: volume.Capability{Scope: "global"}}
+}
