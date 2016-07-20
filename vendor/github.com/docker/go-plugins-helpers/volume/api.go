@@ -38,6 +38,7 @@ type Response struct {
 type Volume struct {
 	Name       string
 	Mountpoint string
+        Status     map[string]interface{}
 }
 
 // Driver represent the interface a driver must fulfill.
