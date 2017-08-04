@@ -274,10 +274,10 @@ def cloneVMDK(vm_name, vmdk_path, opts={}, vm_uuid=None, datastore_url=None, vm_
 
     error_info = authorize_check(vm_uuid=vm_uuid,
                                  datastore_url=src_datastore_url,
+                                 datastore=src_datastore,
                                  cmd=auth.CMD_ATTACH,
                                  opts={},
                                  use_default_ds=False,
-                                 datastore=src_datastore,
                                  vm_datastore_url=vm_datastore_url,
                                  vm_datastore=vm_datastore)
     if error_info:
@@ -311,10 +311,10 @@ def cloneVMDK(vm_name, vmdk_path, opts={}, vm_uuid=None, datastore_url=None, vm_
         opts["size"] = src_vol_info["size"]
         error_info = authorize_check(vm_uuid=vm_uuid,
                                      datastore_url=datastore_url,
+                                     datastore=datastore,
                                      cmd=auth.CMD_CREATE,
                                      opts=opts,
                                      use_default_ds=False,
-                                     datastore=datastore,
                                      vm_datastore_url=vm_datastore_url,
                                      vm_datastore=vm_datastore)
         if error_info:
@@ -854,7 +854,7 @@ def get_datastore_name(datastore_url):
 
     return datastore_name
 
-def authorize_check(vm_uuid, datastore_url, cmd, opts, use_default_ds, datastore, vm_datastore_url, vm_datastore):
+def authorize_check(vm_uuid, datastore_url, datastore, cmd, opts, use_default_ds, vm_datastore_url, vm_datastore):
     """
         Check command from vm can be executed on the datastore or not
         Return None on success or error_info if the command cannot be executed
@@ -1016,25 +1016,31 @@ def executeRequest(vm_uuid, vm_name, config_path, cmd, full_vol_name, opts, vc_u
                       "default_datastore_url=%s datastore_url=%s",
                       vm_uuid, vm_name, tenant_uuid, tenant_name, default_datastore_url, datastore_url)
 
-    error_info = authorize_check(vm_uuid, datastore_url, cmd, opts, use_default_ds, datastore,
-                                 vm_datastore_url, vm_datastore)
+    error_info = authorize_check(vm_uuid=vm_uuid,
+                                 datastore_url=datastore_url,
+                                 datastore=datastore,
+                                 cmd=cmd,
+                                 opts=opts,
+                                 use_default_ds=use_default_ds,
+                                 vm_datastore_url=vm_datastore_url,
+                                 vm_datastore=vm_datastore)
     if error_info:
         return err(error_info)
 
-        # get_vol_path() need to pass in a real datastore name
-        if datastore == auth_data_const.VM_DS:
-            datastore = vm_datastore
-            # set datastore_url to a real datastore_url
-            # createVMDK() and removeVMDK() need to pass in
-            # a real datastore_url instead of url of _VM_DS
-            datastore_url = vm_datastore_url
+    # get_vol_path() need to pass in a real datastore name
+    if datastore == auth_data_const.VM_DS:
+        datastore = vm_datastore
+        # set datastore_url to a real datastore_url
+        # createVMDK() and removeVMDK() need to pass in
+        # a real datastore_url instead of url of _VM_DS
+        datastore_url = vm_datastore_url
 
-        path, errMsg = get_vol_path(datastore, tenant_name)
-        logging.debug("executeRequest for tenant %s with path %s", tenant_name, path)
-        if path is None:
-            return errMsg
+    path, errMsg = get_vol_path(datastore, tenant_name)
+    logging.debug("executeRequest for tenant %s with path %s", tenant_name, path)
+    if path is None:
+        return errMsg
 
-        vmdk_path = vmdk_utils.get_vmdk_path(path, vol_name)
+    vmdk_path = vmdk_utils.get_vmdk_path(path, vol_name)
 
 
     # Set up locking for volume operations.
