@@ -63,11 +63,7 @@ func (s *BasicSharedTestSuite) SetUpTest(c *C) {
 
 var _ = Suite(&BasicSharedTestSuite{})
 
-// Test volume lifecycle management on different datastores:
-// VM1 - created on local VMFS datastore
-// VM2 - created on shared VMFS datastore
-// VM3 - created on shared VSAN datastore (TODO: currently not available)
-//
+// All VMs are created in a shared datastore
 // Test steps:
 // 1. Create a volume
 // 2. Verify the volume is available
@@ -78,7 +74,7 @@ var _ = Suite(&BasicSharedTestSuite{})
 // 7. Verify volume status is detached
 // 8. Remove the volume
 // 9. Verify the volume is unavailable
-// TODO: step 3-7 currently not available since volume mount/unmount is not available yet
+// TODO: step 3-7 currently is not available since volume mount/unmount is not available yet
 func (s *BasicSharedTestSuite) TestVolumeLifecycle(c *C) {
 	misc.LogTestStart(c.TestName())
 

@@ -62,7 +62,7 @@ var (
 // 8. contains space
 func (s *VolumeCreateSharedTestSuite) validVolNames() []string {
 	return []string{
-		// for each volume volname, a internal volume with name "InternalVolvolname"
+		// for each volume volname, an internal volume with name with prefix "InternalVolvolname"
 		// will be created by vsphere driver
 		inputparams.GetVolumeNameOfSize(89),
 		"Volume-0000000-****-###",
@@ -177,7 +177,7 @@ func (s *VolumeCreateSharedTestSuite) TestInvalidName(c *C) {
 // 1. size 10gb
 // 2. disk format (thin, zeroedthick, eagerzeroedthick)
 // 3. attach-as (persistent, independent_persistent)
-// 4. fstype ext4 for linux / ntfs for windows
+// 4. fstype ext4 for linux
 // 5. access (read-write, read-only)
 func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 	misc.LogTestStart(c.TestName())
