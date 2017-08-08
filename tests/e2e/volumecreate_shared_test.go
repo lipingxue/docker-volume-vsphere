@@ -47,6 +47,8 @@ var (
 		inputparams.GetUniqueVolumeName("Volume") + "@invalidDatastore",
 		"volume/abc",
 	}
+	// validFstype is a valid fstype for the TestValidOptions test.
+	validFstype = "ext4"
 )
 
 // validVolNames returns a slice of volume names for the TestValidName test.
@@ -100,9 +102,9 @@ func (s *VolumeCreateSharedTestSuite) createVolCheck(name, option string, valid 
 	var err error
 
 	if option == "" {
-		out, err = dockercli.CreateVolumeShared(s.config.DockerHosts[0], name)
+		out, err = dockercli.CreateSharedVolume(s.config.DockerHosts[0], name)
 	} else {
-		out, err = dockercli.CreateVolumeSharedWithOptions(s.config.DockerHosts[0], name, option)
+		out, err = dockercli.CreateSharedVolumeWithOptions(s.config.DockerHosts[0], name, option)
 	}
 
 	// if creation is successful, add it to the list so that it gets cleaned later
@@ -175,7 +177,8 @@ func (s *VolumeCreateSharedTestSuite) TestInvalidName(c *C) {
 // 1. size 10gb
 // 2. disk format (thin, zeroedthick, eagerzeroedthick)
 // 3. attach-as (persistent, independent_persistent)
-// 4. access (read-write, read-only)
+// 4. fstype ext4 for linux / ntfs for windows
+// 5. access (read-write, read-only)
 func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 	misc.LogTestStart(c.TestName())
 
@@ -186,6 +189,7 @@ func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 		" -o diskformat=eagerzeroedthick",
 		" -o attach-as=independent_persistent",
 		" -o attach-as=persistent",
+		" -o fstype=" + validFstype,
 		" -o access=read-only",
 		" -o access=read-write",
 	}
@@ -199,7 +203,8 @@ func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 // Invalid volume create operations
 // 1. Wrong disk formats
 // 2. Wrong volume size
-// 3. Wrong access types
+// 3. Wrong fs types
+// 4. Wrong access types
 func (s *VolumeCreateSharedTestSuite) TestInvalidOptions(c *C) {
 	misc.LogTestStart(c.TestName())
 
@@ -209,6 +214,7 @@ func (s *VolumeCreateSharedTestSuite) TestInvalidOptions(c *C) {
 		" -o size=100mbb",
 		" -o size=100gbEE",
 		" -o sizes=100mb",
+		" -o fstype=xfs_ext",
 		" -o access=read-write-both",
 		" -o access=write-only",
 		" -o access=read-write-both",
