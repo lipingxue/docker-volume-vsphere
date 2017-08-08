@@ -13,9 +13,10 @@
 // limitations under the License.
 
 // This test suite includes test cases to verify basic functionality
-// in most common configurations
+// before upgrade for upgrade test
 
 // +build runonceshared
+
 package e2e
 
 import (

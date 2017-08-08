@@ -421,14 +421,14 @@ test-e2e-shared:
 # test-e2e-runonce-windows: makes sure to run windows tests *once per ESX*
 # test-e2e-runonce-shared: makes sure to run vsphere shared tests *once per ESX*
 #
-.PHONY: test-e2e-runalways test-e2e-runonce test-e2e-runonce-windows test-e2e-runonce-shared
+.PHONY: test-e2e-runalways test-e2e-runonce test-e2e-runonce-windows
 test-e2e-runalways:
 	$(log_target)
-	$(GO) test -v -timeout 40m -tags runalways $(E2E_Tests)
+	$(GO) test -v -timeout 40m -tags "runalways" $(E2E_Tests)
 
 test-e2e-runonce:
 	$(log_target)
-	$(GO) test -v -timeout 40m -tags runonce $(E2E_Tests)
+	$(GO) test -v -timeout 40m -tags "runonce" $(E2E_Tests)
 
 test-e2e-runonce-windows:
 	$(log_target)
