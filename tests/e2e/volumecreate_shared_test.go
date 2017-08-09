@@ -179,19 +179,21 @@ func (s *VolumeCreateSharedTestSuite) TestInvalidName(c *C) {
 // 3. attach-as (persistent, independent_persistent)
 // 4. fstype ext4 for linux
 // 5. access (read-write, read-only)
+// TODO: Right now, only -o size option is supported by vsphere shared volume
+// all other options are not supported yet
 func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 	misc.LogTestStart(c.TestName())
 
 	validVolOpts := []string{
 		" -o size=10gb",
-		" -o diskformat=zeroedthick",
-		" -o diskformat=thin",
-		" -o diskformat=eagerzeroedthick",
-		" -o attach-as=independent_persistent",
-		" -o attach-as=persistent",
-		" -o fstype=" + validFstype,
-		" -o access=read-only",
-		" -o access=read-write",
+		// " -o diskformat=zeroedthick",
+		// " -o diskformat=thin",
+		// " -o diskformat=eagerzeroedthick",
+		// " -o attach-as=independent_persistent",
+		// " -o attach-as=persistent",
+		// " -o fstype=" + validFstype,
+		// " -o access=read-only",
+		// " -o access=read-write",
 	}
 
 	s.parallelCreateByOption(validVolOpts, true, c)
@@ -205,19 +207,21 @@ func (s *VolumeCreateSharedTestSuite) TestValidOptions(c *C) {
 // 2. Wrong volume size
 // 3. Wrong fs types
 // 4. Wrong access types
+// TODO: Right now, only -o size option is supported by vsphere shared volume
+// all other options are not supported yet
 func (s *VolumeCreateSharedTestSuite) TestInvalidOptions(c *C) {
 	misc.LogTestStart(c.TestName())
 
 	invalidVolOpts := []string{
-		" -o diskformat=zeroedthickk",
-		" -o diskformat=zeroedthick,thin",
+		// " -o diskformat=zeroedthickk",
+		// " -o diskformat=zeroedthick,thin",
 		" -o size=100mbb",
 		" -o size=100gbEE",
 		" -o sizes=100mb",
-		" -o fstype=xfs_ext",
-		" -o access=read-write-both",
-		" -o access=write-only",
-		" -o access=read-write-both",
+		// " -o fstype=xfs_ext",
+		// " -o access=read-write-both",
+		// " -o access=write-only",
+		// " -o access=read-write-both",
 	}
 
 	s.parallelCreateByOption(invalidVolOpts, false, c)
