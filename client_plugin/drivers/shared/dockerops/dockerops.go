@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -67,6 +66,8 @@ const (
 	sambaRequestTimeout = 30 * time.Second
 	// Prefix for internal volume names
 	internalVolumePrefix = "InternalVol"
+	// Error returned when no Samba service for that volume exists
+	noSambaServiceError = "No file service exists"
 )
 
 // DockerOps is the interface for docker host related operations
@@ -338,8 +339,6 @@ func (d *DockerOps) isFileServiceRunning(servID string, volName string) (uint32,
 }
 
 // getServiceIDAndPort - return the file service ID and port for given volume
-// It takes some time from service being brought up to a
-// container for that service to be running.
 // Input
 //      volName: Volume for which the service was run.
 // Output
@@ -363,7 +362,7 @@ func (d *DockerOps) getServiceIDAndPort(volName string) (string, uint32, error) 
 	if len(services) < 1 {
 		msg := fmt.Sprintf("No service returned with name %s.", volName)
 		log.Warningf(msg)
-		return "", 0, errors.New(msg)
+		return "", 0, errors.New(noSambaServiceError)
 	}
 
 	port := services[0].Endpoint.Ports[0].PublishedPort
@@ -412,7 +411,7 @@ func (d *DockerOps) StopSMBServer(volName string) (int, string, bool) {
 		case <-ticker.C:
 			log.Infof("Checking status of file server container...")
 			serviceID, _, err := d.getServiceIDAndPort(volName)
-			if err != nil && !strings.Contains(err.Error(), "No service returned") {
+			if err != nil && err.Error() != noSambaServiceError {
 				return 0, "", false
 			}
 			// service is removed successfully
@@ -420,7 +419,7 @@ func (d *DockerOps) StopSMBServer(volName string) (int, string, bool) {
 				return 0, "", true
 			}
 		case <-timer.C:
-			log.Warningf("Timeout reached while waiting for file server container for volume %s",
+			log.Warningf("Timeout reached while waiting for file server container for volume %s to stop",
 				volName)
 			return 0, "", false
 		}
