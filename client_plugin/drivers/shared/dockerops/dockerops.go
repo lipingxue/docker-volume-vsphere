@@ -66,7 +66,7 @@ const (
 	// Time between successive checks for deleting a volume
 	checkSleepDuration = time.Second
 	// Timeout to mark Samba service launch as unsuccessful
-	sambaRequestTimeout = 30 * time.Second
+	sambaRequestTimeout = 150 * time.Second
 	// Prefix for internal volume names
 	internalVolumePrefix = "InternalVol"
 	// Error returned when no Samba service for that volume exists
