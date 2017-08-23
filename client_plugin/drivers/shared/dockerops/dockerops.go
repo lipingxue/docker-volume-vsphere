@@ -27,7 +27,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+<<<<<<< HEAD
 	"strings"
+=======
+	"strconv"
+>>>>>>> Address comments from Mark to make the sambaRequest timeout value as a config option.
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -63,15 +67,50 @@ const (
 	// Time between successive checks for Samba service
 	// status to see if service container was launched
 	checkDuration = 5 * time.Second
+<<<<<<< HEAD
 	// Time between successive checks for deleting a volume
 	checkSleepDuration = time.Second
 	// Timeout to mark Samba service launch as unsuccessful
 	sambaRequestTimeout = 150 * time.Second
+=======
+	// default Timeout to mark Samba service launch as unsuccessful
+	defaultSambaRequestTimeOutInSecond = 30
+>>>>>>> Address comments from Mark to make the sambaRequest timeout value as a config option.
 	// Prefix for internal volume names
 	internalVolumePrefix = "InternalVol"
 	// Error returned when no Samba service for that volume exists
 	noSambaServiceError = "No file service exists"
 )
+
+var (
+	SambaRequestTimeout      time.Duration
+	isSambaRequestTimeoutSet bool = false
+)
+
+// return SambaRequest timeout value
+func GetSambaRequestTimeout() time.Duration {
+	if isSambaRequestTimeoutSet != false {
+		return SambaRequestTimeout
+	}
+	// read sambaRequest Timout value from enviroment variable
+	timeOutFromConfig := os.Getenv("VFILE_TIMEOUT_IN_SECOND")
+	val, err := strconv.Atoi(timeOutFromConfig)
+	if err == nil {
+		log.WithFields(log.Fields{
+			"value": val,
+		}).Info("Get sambaRequest timeout from config ")
+
+		SambaRequestTimeout = time.Duration(val) * time.Second
+	} else {
+		log.WithFields(log.Fields{
+			"value": defaultSambaRequestTimeOutInSecond,
+		}).Info("Use default value for sambaRequest timeout ")
+
+		SambaRequestTimeout = time.Duration(defaultSambaRequestTimeOutInSecond) * time.Second
+	}
+	isSambaRequestTimeoutSet = true
+	return SambaRequestTimeout
+}
 
 // DockerOps is the interface for docker host related operations
 type DockerOps struct {
@@ -274,7 +313,7 @@ func (d *DockerOps) StartSMBServer(volName string) (int, string, bool) {
 	// Wait till service container starts
 	ticker := time.NewTicker(checkDuration)
 	defer ticker.Stop()
-	timer := time.NewTimer(sambaRequestTimeout)
+	timer := time.NewTimer(GetSambaRequestTimeout())
 	defer timer.Stop()
 	for {
 		select {
@@ -491,7 +530,7 @@ func (d *DockerOps) StopSMBServer(volName string) (int, string, bool) {
 	// Wait till service container stops
 	ticker := time.NewTicker(checkDuration)
 	defer ticker.Stop()
-	timer := time.NewTimer(sambaRequestTimeout)
+	timer := time.NewTimer(GetSambaRequestTimeout())
 	defer timer.Stop()
 	for {
 		select {
