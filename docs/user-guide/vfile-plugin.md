@@ -9,7 +9,11 @@ For example, currently users cannot mount the same persistent volume which is cr
 vSphere Docker Volume Service (vDVS) on containers running on two different hosts at the same time.
 
 This can be solved through distributed file systems, such as NFS, Ceph, Gluster, etc.
+<<<<<<< HEAD
 However, setting up and maintaining enterprise storage offerings for Cloud Native usecases is not a trivial work.
+=======
+However, setting up and maintaining those distributed file systems for docker persistent data usage is not a trivial work.
+>>>>>>> Update user guide.
 Furthermore, users can face more challenges in order to achieve high availability, scalability, and load balancing.
 
 __vFile volume plugin for Docker__ provides simultanous persistent volume access between hosts in the
@@ -132,3 +136,11 @@ When you see somthing like the following in the log
 2017-08-24 11:57:16.436786459 -0700 PDT [WARNING] Failed to create file server for volume space vol7. Reason: Error response from daemon: {"message":"rpc error: code = 3 desc = name must be valid as a DNS name component"}
 ```
 Please make sure the volume you used is a valid volume name. A valid volume name consists of ```[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]```.
+
+### I got " VolumeDriver.Mount: Failed to blocking wait for Mounted state. Error: Timeout reached; BlockingWait is not complete.." when mounting a volume.
+We see this issue only on platforms which the availble disk space are low. On those platforms, docker swarm service takes longer time to up and running. We recommend to run this driver on platforms with enough available disk space. You can also try to increase the service start timeout value by specifing ```VFILE_TIMEOUT_IN_SECOND``` value when installing the plugin:
+```
+docker plugin install --grant-all-permissions --alias vfile cnastorage/vfile:latest VFILE_TIMEOUT_IN_SECOND=90
+```
+The above command increases the service start timeout value to 90 seconds and the default value is 30 seconds.
+

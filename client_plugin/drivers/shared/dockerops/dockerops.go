@@ -27,11 +27,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-<<<<<<< HEAD
-	"strings"
-=======
 	"strconv"
->>>>>>> Address comments from Mark to make the sambaRequest timeout value as a config option.
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -67,15 +64,10 @@ const (
 	// Time between successive checks for Samba service
 	// status to see if service container was launched
 	checkDuration = 5 * time.Second
-<<<<<<< HEAD
 	// Time between successive checks for deleting a volume
 	checkSleepDuration = time.Second
-	// Timeout to mark Samba service launch as unsuccessful
-	sambaRequestTimeout = 150 * time.Second
-=======
 	// default Timeout to mark Samba service launch as unsuccessful
 	defaultSambaRequestTimeOutInSecond = 30
->>>>>>> Address comments from Mark to make the sambaRequest timeout value as a config option.
 	// Prefix for internal volume names
 	internalVolumePrefix = "InternalVol"
 	// Error returned when no Samba service for that volume exists
