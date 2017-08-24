@@ -67,7 +67,7 @@ const (
 	// Time between successive checks for deleting a volume
 	checkSleepDuration = time.Second
 	// default Timeout to mark Samba service launch as unsuccessful
-	defaultServiceStartTimeOutInSecond = 30
+	defaultSvcStartTimeoutSec = 30
 	// Prefix for internal volume names
 	internalVolumePrefix = "InternalVol"
 	// Error returned when no Samba service for that volume exists
@@ -78,7 +78,7 @@ const (
 func GetServiceStartTimeout() time.Duration {
 	timeOutSec, err := strconv.Atoi(os.Getenv("VFILE_TIMEOUT_IN_SECOND"))
 	if err != nil {
-		timeOutSec = defaultServiceStartTimeOutInSecond
+		timeOutSec = defaultSvcStartTimeoutSec
 	}
 	log.WithFields(log.Fields{"value": timeOutSec}).Info("Service start timeout")
 	return time.Duration(timeOutSec) * time.Second

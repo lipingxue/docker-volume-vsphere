@@ -3,7 +3,7 @@ title: vFile volume plugin for Docker
 
 ---
 ## Overview
-Depending on the underlying block storage device system, it might not be possible to access the same
+Depending on the underlying block storage system, it might not be possible to access the same
 persistent volume across different hosts/nodes simultanously.
 For example, currently users cannot mount the same persistent volume which is created through
 vSphere Docker Volume Service (vDVS) on containers running on two different hosts at the same time.
@@ -138,9 +138,9 @@ When you see somthing like the following in the log
 Please make sure the volume you used is a valid volume name. A valid volume name consists of ```[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]```.
 
 ### I got " VolumeDriver.Mount: Failed to blocking wait for Mounted state. Error: Timeout reached; BlockingWait is not complete.." when mounting a volume.
-We see this issue only on platforms which the availble disk space are low. On those platforms, docker swarm service takes longer time to up and running. We recommend to run this driver on platforms with enough available disk space. You can also try to increase the service start timeout value by specifing ```VFILE_TIMEOUT_IN_SECOND``` value when installing the plugin:
+We see this issue only on platform where the space is low. When available disk space are low, Docker Swarm service may take longer to start a service. Generally it's better free up some disk space. You can also try to increase the service start timeout value, controlled by ```VFILE_TIMEOUT_IN_SECOND``` env variable:
 ```
 docker plugin install --grant-all-permissions --alias vfile cnastorage/vfile:latest VFILE_TIMEOUT_IN_SECOND=90
 ```
-The above command increases the service start timeout value to 90 seconds and the default value is 30 seconds.
+This will increase timeout to 90 sec, from default of 30 sec.
 
