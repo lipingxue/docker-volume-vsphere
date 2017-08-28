@@ -22,11 +22,11 @@ Volumes created via the Linux plugin are formatted with ext4 by default, and the
 ### Which release I should use?
 You can choose release based on your needs. There will be two types of releases: edge release and stable release.
 
-edge release: will be released every month for users who want a drop of latest.
+Edge release: A monthly release with new features and bug fixes.
 
-stable release: will be release every 3 month for users who want to a stable version.
+Stable release: A quarterly release with reliable/stable updates.
 
-For details about the nomenclature for release, please refer [here](/CONTRIBUTING.md/#releases-for-ga-and-post-ga).
+For details about the nomenclature for release, please refer [here](https://github.com/vmware/docker-volume-vsphere/blob/master/CONTRIBUTING.md#release-naming-convention).
 
 ## Troubleshooting
 

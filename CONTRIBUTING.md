@@ -263,23 +263,23 @@ COVERAGE_PROCESS_START DEFAULT=/coverage.rc
 
 The CI/CD system is based on [Drone platform](https://drone.io/) and the server is  https://ci.vmware.run/. More information is found at our [CI.md](https://github.com/vmware/docker-volume-vsphere/blob/master/CI.md)
 
-## Releases for GA and post GA
+## Release naming convention
 The following is the plan for releases for GA and post GA. Before GA, the release name format remains the same.
 
 ### Type of Release:
 We plan to have two types of releases: edge release and stable release.
 
-edge release: will be released every month for users who want a drop of latest.
+Edge release: A monthly release with new features and bug fixes.
 
-stable release: will be release every 3 month for users who want to a stable version.
+Stable release: A quarterly release with reliable/stable updates.
 
 ### Nomenclature for release:
 
-The Nomenclature for release will follow the format ```major-version. minor-version.build-version.release-type```.
+The nomenclature for release will follow the format ```major-version.minor-version.build-version.release-type```.
 
-“Major-Version” will be the major version number, “minor-version” will be the minor version number which will be bumped on each monthly release. “build-version” by default is 0. If we decide to cut one more release on that month (maybe some patch releases), we can increase the “build-version” by 1 for that release. “release-type” has two possible values: “stable” to mark a stable release and “edge” to mark a edge release.
+“Major-version” will be the major version number which starts from 1. "Major-version" will be bumped up when some significant changes are being introduced. “minor-version” will be the minor version number which will be bumped up for each monthly release. “build-version” by default is 0. If we decide to cut one more release in that month (maybe some patch releases), we can increase the “build-version” by 1 for that release. “release-type” has two possible values: “stable” to mark a stable release and “edge” to mark an edge release.
 
-For Example, assume we plan to cut the first release for GA on August , the release number will be “1.0.0.stable”. Then the monthly edge release on September will be “1.1.0.edge”, the monthly release on October will be “1.2.0.edge” and the stable release on November will be “1.3.0.stable”, etc.
+For Example, assume we plan to cut the first release for GA in August, the release number will be “1.0.0.stable”. Then the monthly edge release in September will be “1.1.0.edge”, the monthly release in October will be “1.2.0.edge” and the stable release in November will be “1.3.0.stable”, etc.
 
 ## Cutting a new release guidelines
 
