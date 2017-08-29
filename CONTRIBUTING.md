@@ -264,7 +264,7 @@ COVERAGE_PROCESS_START DEFAULT=/coverage.rc
 The CI/CD system is based on [Drone platform](https://drone.io/) and the server is  https://ci.vmware.run/. More information is found at our [CI.md](https://github.com/vmware/docker-volume-vsphere/blob/master/CI.md)
 
 ## Release naming convention
-The following is the plan for releases for GA and post GA. Before GA, the release name format remains the same.
+The following is the plan for GA and post GA releases. Before GA, the release name format remains the same e.g. 0.XX (existing release tag)
 
 ### Type of Release:
 We plan to have two types of releases: edge release and stable release.

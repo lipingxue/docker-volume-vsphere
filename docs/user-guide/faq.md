@@ -26,7 +26,7 @@ Edge release: A monthly release with new features and bug fixes.
 
 Stable release: A quarterly release with reliable/stable updates.
 
-For details about the nomenclature for release, please refer [here](https://github.com/vmware/docker-volume-vsphere/blob/master/CONTRIBUTING.md#release-naming-convention).
+Please refer [release convention](https://github.com/vmware/docker-volume-vsphere/blob/master/CONTRIBUTING.md#release-naming-convention) for more details.
 
 ## Troubleshooting
 
