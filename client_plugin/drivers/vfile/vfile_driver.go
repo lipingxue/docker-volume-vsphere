@@ -494,6 +494,112 @@ func (d *VolumeDriver) processMount(r volume.MountRequest) volume.Response {
 	return volume.Response{Mountpoint: mountpoint}
 }
 
+func (d *VolumeDriver) addVMToClientList(volName string, vmIP string) error {
+	log.Infof("Add VM[%s] to clientList for volume[%s]", volName, vmIP)
+	var entries []kvstore.KvPair
+	var writeEntries []kvstore.KvPair
+	var volRecord etcdops.VFileVolConnectivityData
+	keys := []string{
+		kvstore.VolPrefixInfo + volName,
+	}
+	entries, err := d.kvStore.ReadMetaData(keys)
+	if err != nil {
+		// Failed to fetch existing metadata on the volume
+		// Set volume state to error as we cannot
+		// proceed
+		log.Warningf("Failed to read volume metadata before adding VM to ClientList: %v",
+			err)
+		return err
+	}
+	err = json.Unmarshal([]byte(entries[0].Value), &volRecord)
+	if err != nil {
+		// Failed to unmarshal record from JSON
+		log.Warningf("Failed to unmarshal JSON for reading existing metadata: %v",
+			err)
+		return err
+	}
+	// Add vmIP to CLientList
+	// then marshal the data structure to JSON again.
+	volRecord.ClientList = append(volRecord.ClientList, vmIP)
+	byteRecord, err := json.Marshal(volRecord)
+	if err != nil {
+		// Failed to marshal record as JSON
+		log.Warningf("Failed to marshal JSON for writing metadata: %v",
+			err)
+		return err
+	}
+	writeEntries = append(writeEntries, kvstore.KvPair{
+		Key:   kvstore.VolPrefixInfo + volName,
+		Value: string(byteRecord)})
+
+	log.Infof("Adding VM[%s] to CLientList for %s", vmIP, volName)
+	err = d.kvStore.WriteMetaData(writeEntries)
+	if err != nil {
+		// Failed to write metadata.
+		log.Warningf("Failed to write metadata for volume %s",
+			volName)
+		return err
+	}
+	return nil
+}
+
+func (d *VolumeDriver) removeVMFromClientList(volName string, vmIP string) error {
+	log.Infof("Remove VM[%s] from clientList for volume[%s]", volName, vmIP)
+	var entries []kvstore.KvPair
+	var writeEntries []kvstore.KvPair
+	var volRecord etcdops.VFileVolConnectivityData
+
+	keys := []string{
+		kvstore.VolPrefixInfo + volName,
+	}
+	entries, err := d.kvStore.ReadMetaData(keys)
+	if err != nil {
+		// Failed to fetch existing metadata on the volume
+		// Set volume state to error as we cannot
+		// proceed
+		log.Warningf("Failed to read volume metadata before adding VM to ClientList: %v",
+			err)
+		return err
+	}
+	err = json.Unmarshal([]byte(entries[0].Value), &volRecord)
+	if err != nil {
+		// Failed to unmarshal record from JSON
+		log.Warningf("Failed to unmarshal JSON for reading existing metadata: %v",
+			err)
+		return err
+	}
+	// Add vmIP to CLientList
+	// then marshal the data structure to JSON again.
+	var newClientList []string
+	for _, clientIP := range volRecord.ClientList {
+		if clientIP != vmIP {
+			newClientList = append(newClientList, clientIP)
+		}
+	}
+
+	volRecord.ClientList = newClientList
+	byteRecord, err := json.Marshal(volRecord)
+	if err != nil {
+		// Failed to marshal record as JSON
+		log.Warningf("Failed to marshal JSON for writing metadata: %v",
+			err)
+		return err
+	}
+	writeEntries = append(writeEntries, kvstore.KvPair{
+		Key:   kvstore.VolPrefixInfo + volName,
+		Value: string(byteRecord)})
+
+	log.Infof("Adding VM[%s] to CLientList for %s", vmIP, volName)
+	err = d.kvStore.WriteMetaData(writeEntries)
+	if err != nil {
+		// Failed to write metadata.
+		log.Warningf("Failed to write metadata for volume %s",
+			volName)
+		return err
+	}
+	return nil
+}
+
 // MountVolume - Request attach and then mounts the volume.
 func (d *VolumeDriver) MountVolume(name string, fstype string, id string, isReadOnly bool, skipAttach bool) (string, error) {
 	mountpoint := d.GetMountPoint(name)
@@ -566,6 +672,25 @@ func (d *VolumeDriver) MountVolume(name string, fstype string, id string, isRead
 			log.Fields{"name": name,
 				"error": msg}).Error("")
 		return "", errors.New(msg)
+	}
+
+	// mount is successful, update the clientList
+	_, addr, _, err := d.dockerOps.GetSwarmInfo()
+	if err != nil {
+		log.WithFields(
+			log.Fields{"volume name": name,
+				"error": err,
+			}).Error("Failed to get IP address from docker swarm ")
+		return "", err
+	}
+
+	err = d.addVMToClientList(name, addr)
+	if err != nil {
+		log.WithFields(
+			log.Fields{"volume name": name,
+				"error": err,
+			}).Error("Failed to add VM IP to ClientList")
+		return "", err
 	}
 
 	return mountpoint, nil
@@ -695,6 +820,25 @@ func (d *VolumeDriver) UnmountVolume(name string) error {
 			log.Fields{"name": name,
 				"error": err},
 		).Error("Failed to derease global refcount when processUnmount ")
+		return err
+	}
+
+	// unmount is successful, update the clientList
+	_, addr, _, err := d.dockerOps.GetSwarmInfo()
+	if err != nil {
+		log.WithFields(
+			log.Fields{"volume name": name,
+				"error": err,
+			}).Error("Failed to get IP address from docker swarm ")
+		return err
+	}
+
+	err = d.removeVMFromClientList(name, addr)
+	if err != nil {
+		log.WithFields(
+			log.Fields{"volume name": name,
+				"error": err,
+			}).Error("Failed to add VM IP to ClientList")
 		return err
 	}
 

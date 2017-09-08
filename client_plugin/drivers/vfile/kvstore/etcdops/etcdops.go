@@ -76,8 +76,8 @@ type EtcdKVS struct {
 	nodeAddr  string
 }
 
-// vFileVolConnectivityData - Contains metadata of vFile volumes
-type vFileVolConnectivityData struct {
+// VFileVolConnectivityData - Contains metadata of vFile volumes
+type VFileVolConnectivityData struct {
 	Port        int      `json:"port,omitempty"`
 	ServiceName string   `json:"serviceName,omitempty"`
 	Username    string   `json:"username,omitempty"`
@@ -415,7 +415,7 @@ func (e *EtcdKVS) etcdEventHandler(ev *etcdClient.Event) {
 			// port number and file service name.
 			var entries []kvstore.KvPair
 			var writeEntries []kvstore.KvPair
-			var volRecord vFileVolConnectivityData
+			var volRecord VFileVolConnectivityData
 
 			// Port, Server name, Client list, Samba
 			// username/password are in the same key.
