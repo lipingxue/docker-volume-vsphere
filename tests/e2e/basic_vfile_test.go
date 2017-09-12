@@ -75,7 +75,6 @@ var _ = Suite(&BasicVFileTestSuite{})
 // 7. Verify volume status is detached
 // 8. Remove the volume
 // 9. Verify the volume is unavailable
-// TODO: step 3-7 currently is not available since volume mount/unmount is not available yet
 func (s *BasicVFileTestSuite) TestVolumeLifecycle(c *C) {
 	misc.LogTestStart(c.TestName())
 
@@ -86,20 +85,21 @@ func (s *BasicVFileTestSuite) TestVolumeLifecycle(c *C) {
 		accessible := verification.CheckVolumeAvailability(host, s.volName1)
 		c.Assert(accessible, Equals, true, Commentf("Volume %s is not available", s.volName1))
 
-		// out, err = dockercli.AttachVolume(host, s.volName1, s.containerName)
-		// c.Assert(err, IsNil, Commentf(out))
+		out, err = dockercli.AttachVolume(host, s.volName1, s.containerName)
+		c.Assert(err, IsNil, Commentf(out))
 
-		// status := verification.VerifyAttachedStatus(s.volName1, host, s.esx)
-		// c.Assert(status, Equals, true, Commentf("Volume %s is not attached", s.volName1))
+		status := verification.VerifyAttachedStatus(s.volName1, host, s.esx)
+		c.Assert(status, Equals, true, Commentf("Volume %s is not attached", s.volName1))
 
-		// out, err = dockercli.DeleteVolume(host, s.volName1)
-		// c.Assert(err, Not(IsNil), Commentf(out))
+		out, err = dockercli.DeleteVolume(host, s.volName1)
+		c.Assert(err, Not(IsNil), Commentf(out))
 
-		// out, err = dockercli.RemoveContainer(host, s.containerName)
-		// c.Assert(err, IsNil, Commentf(out))
+		out, err = dockercli.RemoveContainer(host, s.containerName)
+		c.Assert(err, IsNil, Commentf(out))
 
-		// status = verification.VerifyDetachedStatus(s.volName1, host, s.esx)
-		// c.Assert(status, Equals, true, Commentf("Volume %s is still attached", s.volName1))
+		status = verification.VerifyDetachedStatus(s.volName1, host, s.esx)
+		c.Assert(status, Equals, true, Commentf("Volume %s is still attached", s.volName1))
+
 		out = verification.GetVFileVolumeStatusHost(s.volName1, host)
 		log.Println("GetVFileVolumeStatusHost return out[%s] for volume %s", out, s.volName1)
 		c.Assert(out, Equals, "Ready", Commentf("Volume %s status is expected to be [Ready], actual status is [%s]",
