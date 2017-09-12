@@ -21,6 +21,8 @@ package e2e
 
 import (
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/vmware/docker-volume-vsphere/tests/utils/dockercli"
 	"github.com/vmware/docker-volume-vsphere/tests/utils/inputparams"
@@ -57,8 +59,8 @@ func (s *BasicVFileTestSuite) SetUpSuite(c *C) {
 }
 
 func (s *BasicVFileTestSuite) SetUpTest(c *C) {
-	s.volName1 = inputparams.GetUniqueVolumeName(c.TestName())
-	s.volName2 = inputparams.GetUniqueVolumeName(c.TestName())
+	s.volName1 = inputparams.GetVFileVolumeName()
+	s.volName2 = inputparams.GetVFileVolumeName()
 	s.containerName = inputparams.GetUniqueContainerName(c.TestName())
 }
 
@@ -85,11 +87,13 @@ func (s *BasicVFileTestSuite) TestVolumeLifecycle(c *C) {
 		accessible := verification.CheckVolumeAvailability(host, s.volName1)
 		c.Assert(accessible, Equals, true, Commentf("Volume %s is not available", s.volName1))
 
-		out, err = dockercli.AttachVolume(host, s.volName1, s.containerName)
+		out, err = dockercli.AttachVFileVolume(host, s.volName1, s.containerName)
 		c.Assert(err, IsNil, Commentf(out))
 
-		status := verification.VerifyAttachedStatus(s.volName1, host, s.esx)
-		c.Assert(status, Equals, true, Commentf("Volume %s is not attached", s.volName1))
+		// Expect global refcount for this volume to be 1
+		out = verification.GetVFileVolumeGlobalRefcount(s.volName1, host)
+		grefc, _ := strconv.Atoi(out)
+		c.Assert(grefc, Equals, 1, Commentf("Expected volume global refcount to be 1, found %s", out))
 
 		out, err = dockercli.DeleteVolume(host, s.volName1)
 		c.Assert(err, Not(IsNil), Commentf(out))
@@ -97,8 +101,12 @@ func (s *BasicVFileTestSuite) TestVolumeLifecycle(c *C) {
 		out, err = dockercli.RemoveContainer(host, s.containerName)
 		c.Assert(err, IsNil, Commentf(out))
 
-		status = verification.VerifyDetachedStatus(s.volName1, host, s.esx)
-		c.Assert(status, Equals, true, Commentf("Volume %s is still attached", s.volName1))
+		// Expect global refcount for this volume to be 0
+		out = verification.GetVFileVolumeGlobalRefcount(s.volName1, host)
+		grefc, _ = strconv.Atoi(out)
+		c.Assert(grefc, Equals, 0, Commentf("Expected volume global refcount to be 0, found %s", out))
+
+		time.Sleep(5 * time.Second) // wait for volume status back to Ready
 
 		out = verification.GetVFileVolumeStatusHost(s.volName1, host)
 		log.Println("GetVFileVolumeStatusHost return out[%s] for volume %s", out, s.volName1)
@@ -108,8 +116,7 @@ func (s *BasicVFileTestSuite) TestVolumeLifecycle(c *C) {
 		accessible = verification.CheckVolumeAvailability(host, s.volName1)
 		c.Assert(accessible, Equals, true, Commentf("Volume %s is not available", s.volName1))
 
-		// delete the volume from master until issue 1715 is fixed
-		out, err = dockercli.DeleteVolume(s.config.DockerHosts[0], s.volName1)
+		out, err = dockercli.DeleteVolume(host, s.volName1)
 		c.Assert(err, IsNil, Commentf(out))
 	}
 

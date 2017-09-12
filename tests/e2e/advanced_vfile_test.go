@@ -20,12 +20,13 @@
 package e2e
 
 import (
+	"strconv"
+
 	"github.com/vmware/docker-volume-vsphere/tests/utils/dockercli"
 	"github.com/vmware/docker-volume-vsphere/tests/utils/inputparams"
 	"github.com/vmware/docker-volume-vsphere/tests/utils/misc"
 	"github.com/vmware/docker-volume-vsphere/tests/utils/verification"
 	. "gopkg.in/check.v1"
-	"strconv"
 )
 
 const (
