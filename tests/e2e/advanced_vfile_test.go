@@ -118,7 +118,6 @@ func (s *AdvancedVFileTestSuite) TestVFileVolumeLifecycle(c *C) {
 	grefc, _ = strconv.Atoi(out)
 	c.Assert(grefc, Equals, 0, Commentf("Expected volume global refcount to be 0, found %s", out))
 
-	// delete the volume // Will uncomment after unmount() code is done
 	out, err = dockercli.DeleteVolume(s.worker1, s.volName1)
 	c.Assert(err, IsNil, Commentf(out))
 
