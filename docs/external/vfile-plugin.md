@@ -121,6 +121,9 @@ Please see README.md in the for the release by clicking on the tag for the relea
 ### Can I use another base volume plugin other than vDVS?
 Currently vFile volume service is only developed and tested with vDVS as the base volume plugin.
 
+### Can I use default driver for local volumes as a base volume plugin?
+No, this is not supported by vFile plugin.
+
 ### I got "Operation now in progress" error when mounting a vFile volume to a container.
 Please make sure the routing mesh of Docker Swarm cluster is working properly.
 Use the following way to verify:
