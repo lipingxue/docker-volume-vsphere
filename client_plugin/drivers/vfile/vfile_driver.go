@@ -674,25 +674,6 @@ func (d *VolumeDriver) MountVolume(name string, fstype string, id string, isRead
 		return "", errors.New(msg)
 	}
 
-	// mount is successful, update the clientList
-	_, addr, _, err := d.dockerOps.GetSwarmInfo()
-	if err != nil {
-		log.WithFields(
-			log.Fields{"volume name": name,
-				"error": err,
-			}).Error("Failed to get IP address from docker swarm ")
-		return "", err
-	}
-
-	err = d.addVMToClientList(name, addr)
-	if err != nil {
-		log.WithFields(
-			log.Fields{"volume name": name,
-				"error": err,
-			}).Error("Failed to add VM IP to ClientList")
-		return "", err
-	}
-
 	return mountpoint, nil
 }
 
@@ -735,6 +716,15 @@ func (d *VolumeDriver) mountVFileVolume(volName string, mountpoint string, volRe
 				"output": string(output),
 				"error":  err,
 			}).Error("Mount failed: ")
+		return err
+	}
+
+	err = d.addVMToClientList(volName, addr)
+	if err != nil {
+		log.WithFields(
+			log.Fields{"volume name": volName,
+				"error": err,
+			}).Error("Failed to add VM IP to ClientList")
 		return err
 	}
 
