@@ -154,7 +154,7 @@ docker plugin install --grant-all-permissions --alias vfile vmware/vfile:latest 
 This will increase timeout to 90 sec, from default of 30 sec.
 
 ### Volume mount failed, retry mount with the same volume still failed.
-Check the "Volume Status" field of ``` docker volume inspect ```, if the "Volume Status" fields shows "Error", which means volume is in an error status, user need manually remove the volume to recover.
+Check the "Volume Status" field of ``` docker volume inspect ```, if the "Volume Status" field shows "Error", which means volume is in error status, user need manually remove the volume to recover.
 ```
 docker volume inspect vol1
 [
