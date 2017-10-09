@@ -154,7 +154,7 @@ docker plugin install --grant-all-permissions --alias vfile vmware/vfile:latest 
 This will increase timeout to 90 sec, from default of 30 sec.
 
 ### Volume mount failed, retry mount with the same volume still failed.
-Check the "Volume Status" field of ``` docker volume inspect ```, if the "Volume Status" field shows "Error", which means volume is in error status, user need manually remove the volume to recover.
+Check the "Volume Status" field of ``` docker volume inspect ```, if the "Volume Status" field shows "Error", which means volume is in error status, user should remove the volume manually.
 ```
 docker volume inspect vol1
 [
@@ -192,9 +192,9 @@ Please follow the following [recommendations for the Swarm manager nodes setup](
 ### Does vFile plugin support multi-tenancy feature?
 No. vFile plugin does not support multi-tenency, which is currently an experimental feature for vDVS.
 Assume we have created a vmgroup ```vmgroup1``` and add VM "node1" to ```vmgroup1```. VM "node2" has not been added to any vmgroup and is considered belong to ```_DEFAULT``` vmgroup.
-Then create a volume "vol1" from "node02" and a volume "vol2" from "node01" using vFile plugin.
+Then create a volume "vol1" from "node2" and a volume "vol2" from "node1" using vFile plugin.
 
-On "node01", we are able to see both "vol1" and "vol2" which are created by vFile plugin.
+On "node1", we are able to see both "vol1" and "vol2" which are created by vFile plugin.
 ```
 vmware@ubuntu16:~$ docker volume ls
 DRIVER              VOLUME NAME
@@ -204,7 +204,7 @@ vfile:latest        vol2
 
 ```
 
-On node 02, we are also able to see both "vol1" and "vol2".
+On "node2", we are also able to see both "vol1" and "vol2".
 ```
 vmware@ubuntu16:~$ docker volume ls
 DRIVER              VOLUME NAME
