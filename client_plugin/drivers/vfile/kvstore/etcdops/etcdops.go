@@ -78,11 +78,10 @@ type EtcdKVS struct {
 
 // VFileVolConnectivityData - Contains metadata of vFile volumes
 type VFileVolConnectivityData struct {
-	Port        int      `json:"port,omitempty"`
-	ServiceName string   `json:"serviceName,omitempty"`
-	Username    string   `json:"username,omitempty"`
-	Password    string   `json:"password,omitempty"`
-	ClientList  []string `json:"clientList,omitempty"`
+	Port        int    `json:"port,omitempty"`
+	ServiceName string `json:"serviceName,omitempty"`
+	Username    string `json:"username,omitempty"`
+	Password    string `json:"password,omitempty"`
 }
 
 // NewKvStore function: start or join ETCD cluster depending on the role of the node
@@ -370,7 +369,7 @@ func (e *EtcdKVS) serviceAndVolumeGC(cli *etcdClient.Client) {
 
 // cleanOrphanService: stop orphan services
 func (e *EtcdKVS) cleanOrphanService(volumesToVerify []string) {
-	volStates, err := e.kvMapFromPrefix(string(kvstore.VolPrefixState))
+	volStates, err := e.KvMapFromPrefix(string(kvstore.VolPrefixState))
 	if err != nil {
 		// if ETCD is not functionaing correctly, stop and return
 		log.Warningf("Failed to get volume states from ETCD due to error %v.", err)
