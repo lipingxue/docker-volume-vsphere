@@ -706,8 +706,8 @@ func (e *EtcdKVS) List(prefix string) ([]string, error) {
 	return keys, nil
 }
 
-// kvMapFromPrefix -  Create key-value pairs according to a given prefix
-func (e *EtcdKVS) kvMapFromPrefix(prefix string) (map[string]string, error) {
+// KvMapFromPrefix -  Create key-value pairs according to a given prefix
+func (e *EtcdKVS) KvMapFromPrefix(prefix string) (map[string]string, error) {
 	m := make(map[string]string)
 
 	client := e.createEtcdClient()
@@ -860,6 +860,40 @@ func (e *EtcdKVS) DeleteMetaData(name string) error {
 	cancel()
 	if err != nil {
 		msg = fmt.Sprintf("Failed to delete metadata for volume %s: %v", name, err)
+		if err == context.DeadlineExceeded {
+			msg += fmt.Sprintf(swarmUnhealthyErrorMsg)
+		}
+		log.Warningf(msg)
+		return errors.New(msg)
+	}
+	return nil
+}
+
+// DeleteClientMetaData - Delete volume client metadata in KV store
+func (e *EtcdKVS) DeleteClientMetaData(name string, nodeID string) error {
+
+	var msg string
+	var err error
+
+	// Create a client to talk to etcd
+	client := e.createEtcdClient()
+	if client == nil {
+		return errors.New(etcdClientCreateError)
+	}
+	defer client.Close()
+
+	// ops hold multiple operations that will be done to etcd
+	// in a single revision. Add all keys for this volname.
+	ops := []etcdClient.Op{
+		etcdClient.OpDelete(kvstore.VolPrefixClient + name + "_" + nodeID),
+	}
+
+	// Delete the metadata in a single transaction
+	ctx, cancel := context.WithTimeout(context.Background(), etcdRequestTimeout)
+	_, err = client.Txn(ctx).Then(ops...).Commit()
+	cancel()
+	if err != nil {
+		msg = fmt.Sprintf("Failed to delete client metadata for volume %s on node %s: %v", name, nodeID, err)
 		if err == context.DeadlineExceeded {
 			msg += fmt.Sprintf(swarmUnhealthyErrorMsg)
 		}
