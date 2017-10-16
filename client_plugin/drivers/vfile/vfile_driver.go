@@ -734,9 +734,18 @@ func (d *VolumeDriver) processUnmount(r volume.UnmountRequest) volume.Response {
 
 // UnmountVolume - Request detach and then unmount the volume.
 func (d *VolumeDriver) UnmountVolume(name string) error {
+	mountpoint := d.GetMountPoint(name)
+	err := fs.Unmount(mountpoint)
+	if err != nil {
+		log.WithFields(
+			log.Fields{"mountpoint": mountpoint, "error": err},
+		).Error("Failed to unmount volume. Now trying to detach... ")
+		return err
+	}
+
 	// Decrease GRef
 	log.Infof("Before AtomicDecr")
-	err := d.kvStore.AtomicDecr(kvstore.VolPrefixGRef + name)
+	err = d.kvStore.AtomicDecr(kvstore.VolPrefixGRef + name)
 	if err != nil {
 		log.WithFields(
 			log.Fields{"name": name,
@@ -763,25 +772,7 @@ func (d *VolumeDriver) UnmountVolume(name string) error {
 			}).Error("Failed to remove VM IP from ClientList")
 		return err
 	}
-	mountpoint := d.GetMountPoint(name)
-	err = fs.Unmount(mountpoint)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to unmount vFile volume. Error: %v.", err)
-		// AtomicIncr increase global refcount by one
-		err = d.kvStore.AtomicIncr(kvstore.VolPrefixGRef + name)
-		if err != nil {
-			msg += fmt.Sprintf(" Also failed to increase global refcount. Error: %v.", err)
-		}
-		// add VM IP to ClientList
-		err = d.addVMToClientList(name, nodeID, addr)
-		if err != nil {
-			msg += fmt.Sprintf(" Also failed to add VM from ClientList. Error: %v.", err)
-		}
-		log.WithFields(
-			log.Fields{"name": name,
-				"error": msg}).Error("Failed to unmount volume")
-		return errors.New(msg)
-	}
+
 	return nil
 }
 
