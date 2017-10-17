@@ -772,7 +772,6 @@ func (d *VolumeDriver) UnmountVolume(name string) error {
 			}).Error("Failed to remove VM IP from ClientList")
 		return err
 	}
-
 	return nil
 }
 
