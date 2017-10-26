@@ -371,7 +371,6 @@ func (e *EtcdKVS) serviceAndVolumeGC(cli *etcdClient.Client) {
 
 // cleanOrphanService: stop orphan services
 func (e *EtcdKVS) cleanOrphanService(volumesToVerify []string) {
-	log.Infof("cleanOrphanService")
 	volStates, err := e.KvMapFromPrefix(string(kvstore.VolPrefixState))
 	if err != nil {
 		// if ETCD is not functionaing correctly, stop and return
