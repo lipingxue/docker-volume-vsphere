@@ -47,7 +47,7 @@ Run the following command to remove and reinstall vFile plugin from docker cli:
 docker plugin rm vfile:latest -f vfile:latest
 docker plugin install --grant-all-permissions --alias vfile vmware/vfile:latest VFILE_TIMEOUT_IN_SECOND=90
 ```
-Note: Please make sure no volume is still mounted when trying to reinstall the vFile plugin.
+Note: Please make sure no volume is still mounted when trying to remove and reinstall the vFile plugin.
 
 ## Usage examples
 
