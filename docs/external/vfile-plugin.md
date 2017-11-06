@@ -44,10 +44,15 @@ The recommended order to remove and reinstallation is:
 
 Run the following command to remove and reinstall vFile plugin from docker cli:
 ```
-docker plugin rm vfile:latest -f vfile:latest
+docker plugin rm vfile:latest vfile:latest
 docker plugin install --grant-all-permissions --alias vfile vmware/vfile:latest VFILE_TIMEOUT_IN_SECOND=90
 ```
-Note: Please make sure no volume is still mounted when trying to remove and reinstall the vFile plugin.
+Note: Please make sure no volume exists when trying to remove and reinstall the vFile plugin. You will get the following error when trying to remove vFile plugin if a volume still exists.
+```
+docker plugin rm vfile:latest
+Error response from daemon: plugin vfile:latest is in use
+```
+You can use ``` docker plugin rm -f vfile:latest ``` to force remove the vFile plugin and reinstall the vFile plugin, but after that, that volume is not usable.
 
 ## Usage examples
 
