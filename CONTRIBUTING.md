@@ -110,7 +110,7 @@ The prerequisite to build and deploy the plugin is to have a DockerHub account. 
 
 - The build will use your `username` (the output of `whoami`) to decide on the `DOCKER_HUB_REPO` name to complete our move to use managed plugin. If you want to use another DockerHub repository you need to set `DOCKER_HUB_REPO` as environment variable.
 
-- You **need** to set enviroment variable `SSH_KEY_OPT` if your ssh keys are not stored in the default location with the following format:
+- You **need** to set environment variable `SSH_KEY_OPT` if your ssh keys are not stored in the default location with the following format:
 ```
 export SSH_KEY_OPT='-i /Users/username/.ssh/id_rsa'
 ```
