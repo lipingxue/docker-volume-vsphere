@@ -113,6 +113,7 @@ The prerequisite to build and deploy the plugin is to have a DockerHub account. 
 - You **need** to set environment variable `SSH_KEY_OPT` if your ssh keys are not stored in the default location with the following format:
 ```
 export SSH_KEY_OPT='-i /Users/username/.ssh/id_rsa'
+
 ```
 
 - Test verification is extended using govmomi integration and `govc` cli is **required to set** following environment variables.
