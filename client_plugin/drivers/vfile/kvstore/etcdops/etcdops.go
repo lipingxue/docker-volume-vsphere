@@ -35,8 +35,8 @@ import (
 )
 
 /*
-   etcdClientPort:             port for etcd clients to talk to the peers
-   etcdPeerPort:               port for etcd peers talk to each other
+   defaultEtcdClientPort:      default port for etcd clients to talk to the peers
+   defaultEtcdPeerPort:        default port for etcd peers talk to each other
    etcdClusterToken:           ID of the cluster to create/join
    etcdListenURL:              etcd listening interface
    etcdScheme:                 Protocol used for communication
@@ -57,8 +57,8 @@ import (
 */
 const (
 	etcdDataDir              = "/etcd-data"
-	etcdClientPort           = ":2379"
-	etcdPeerPort             = ":2380"
+	defaultEtcdClient        = ":2379"
+	defaultEtPeerPort        = ":2380"
 	etcdClusterToken         = "vfile-etcd-cluster"
 	etcdListenURL            = "0.0.0.0"
 	etcdScheme               = "http://"
@@ -189,10 +189,30 @@ func NewKvStore(dockerOps *dockerops.DockerOps) *EtcdKVS {
 	return e
 }
 
+func getEtcdPorts() (string, string) {
+	etcdClientPort := os.Getenv("VFILE_ETCD_CLIENT_PORT")
+	etcdPeerPort := os.Getenv("VFILE_ETCD_PEER_PORT")
+
+	if etcdCLientPort == "" {
+		etcdClientPort = defaultEtcdClientPort
+	} else {
+		etcdClientPort = ":" + ectdClientPort
+	}
+
+	if etcdPeerPort == "" {
+		etcdPeerPort = defaultEtcdPeerPort
+	} else {
+		etcdPeerPort = ":" + ectdPeerPort
+	}
+	log.Infof("getEtcdPorts: clientPort=%s peerPort=%s", etcdClientPort, etcdPeerPort)
+	return etcdClientPort, etcdPeerPort
+}
+
 // rejoinEtcdCluster function is called when a node need to rejoin a ETCD cluster
 func (e *EtcdKVS) rejoinEtcdCluster() error {
 	nodeID := e.nodeID
 	nodeAddr := e.nodeAddr
+	etcdClientPort, etcdPeerPort := getEtcdPorts()
 	log.Infof("rejoinEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 	lines := []string{
 		"--name", nodeID,
@@ -218,6 +238,7 @@ func (e *EtcdKVS) rejoinEtcdCluster() error {
 func (e *EtcdKVS) startEtcdCluster() error {
 	nodeID := e.nodeID
 	nodeAddr := e.nodeAddr
+	etcdClientPort, etcdPeerPort := getEtcdPorts()
 	log.Infof("startEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 
 	files, err := filepath.Glob(etcdDataDir)
@@ -256,6 +277,7 @@ func (e *EtcdKVS) startEtcdCluster() error {
 func (e *EtcdKVS) joinEtcdCluster() error {
 	nodeAddr := e.nodeAddr
 	nodeID := e.nodeID
+	etcdClientPort, etcdPeerPort := getEtcdPorts()
 	log.Infof("joinEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 
 	leaderAddr, err := e.dockerOps.GetSwarmLeader()
@@ -893,6 +915,7 @@ func (e *EtcdKVS) createEtcdClient() *etcdClient.Client {
 func addrToEtcdClient(addr string) (*etcdClient.Client, error) {
 	// input address are RemoteManagers from docker info or ManagerStatus.Addr from docker inspect
 	// in the format of [host]:[docker manager port]
+	etcdClientPort, _ := getEtcdPorts()
 	s := strings.Split(addr, ":")
 	endpoint := s[0] + etcdClientPort
 	cfg := etcdClient.Config{
