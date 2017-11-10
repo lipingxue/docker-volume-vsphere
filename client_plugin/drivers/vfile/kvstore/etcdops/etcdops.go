@@ -57,8 +57,8 @@ import (
 */
 const (
 	etcdDataDir              = "/etcd-data"
-	defaultEtcdClient        = ":2379"
-	defaultEtPeerPort        = ":2380"
+	defaultEtcdClientPort    = ":2379"
+	defaultEtcdPeerPort      = ":2380"
 	etcdClusterToken         = "vfile-etcd-cluster"
 	etcdListenURL            = "0.0.0.0"
 	etcdScheme               = "http://"
@@ -193,16 +193,16 @@ func getEtcdPorts() (string, string) {
 	etcdClientPort := os.Getenv("VFILE_ETCD_CLIENT_PORT")
 	etcdPeerPort := os.Getenv("VFILE_ETCD_PEER_PORT")
 
-	if etcdCLientPort == "" {
+	if etcdClientPort == "" {
 		etcdClientPort = defaultEtcdClientPort
 	} else {
-		etcdClientPort = ":" + ectdClientPort
+		etcdClientPort = ":" + etcdClientPort
 	}
 
 	if etcdPeerPort == "" {
 		etcdPeerPort = defaultEtcdPeerPort
 	} else {
-		etcdPeerPort = ":" + ectdPeerPort
+		etcdPeerPort = ":" + etcdPeerPort
 	}
 	log.Infof("getEtcdPorts: clientPort=%s peerPort=%s", etcdClientPort, etcdPeerPort)
 	return etcdClientPort, etcdPeerPort
@@ -436,6 +436,7 @@ func (e *EtcdKVS) leaveEtcdCluster() error {
 
 	// create the peer URL for filtering ETCD member information
 	// each ETCD member has a unique peer URL
+	_, etcdPeerPort := getEtcdPorts()
 	peerAddr := etcdScheme + e.nodeAddr + etcdPeerPort
 	for _, member := range lresp.Members {
 		// loop all current etcd members to find if there is already a member with the same peerAddr
