@@ -85,6 +85,10 @@ type EtcdKVS struct {
 	etcdCMD *exec.Cmd
 	// watcher is used for killing the watch request when node is demoted
 	watcher *etcdClient.Client
+	// etcdClientPort is the port for etcd clients to talk to the peers
+	etcdClientPort string
+	// etcdPeerPort is port for etcd peers talk to each other
+	etcdPeerPort string
 }
 
 // VFileVolConnectivityData - Contains metadata of vFile volumes
@@ -108,11 +112,15 @@ func NewKvStore(dockerOps *dockerops.DockerOps) *EtcdKVS {
 		return nil
 	}
 
+	etcdClientPort, etcdPeerPort := getEtcdPorts()
+
 	e = &EtcdKVS{
-		dockerOps: dockerOps,
-		nodeID:    nodeID,
-		nodeAddr:  addr,
-		isManager: isManager,
+		dockerOps:      dockerOps,
+		nodeID:         nodeID,
+		nodeAddr:       addr,
+		isManager:      isManager,
+		etcdClientPort: etcdClientPort,
+		etcdPeerPort:   etcdPeerPort,
 	}
 
 	if !isManager {
@@ -212,7 +220,8 @@ func getEtcdPorts() (string, string) {
 func (e *EtcdKVS) rejoinEtcdCluster() error {
 	nodeID := e.nodeID
 	nodeAddr := e.nodeAddr
-	etcdClientPort, etcdPeerPort := getEtcdPorts()
+	etcdClientPort := e.etcdClientPort
+	etcdPeerPort := e.etcdPeerPort
 	log.Infof("rejoinEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 	lines := []string{
 		"--name", nodeID,
@@ -238,7 +247,8 @@ func (e *EtcdKVS) rejoinEtcdCluster() error {
 func (e *EtcdKVS) startEtcdCluster() error {
 	nodeID := e.nodeID
 	nodeAddr := e.nodeAddr
-	etcdClientPort, etcdPeerPort := getEtcdPorts()
+	etcdClientPort := e.etcdClientPort
+	etcdPeerPort := e.etcdPeerPort
 	log.Infof("startEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 
 	files, err := filepath.Glob(etcdDataDir)
@@ -277,7 +287,8 @@ func (e *EtcdKVS) startEtcdCluster() error {
 func (e *EtcdKVS) joinEtcdCluster() error {
 	nodeAddr := e.nodeAddr
 	nodeID := e.nodeID
-	etcdClientPort, etcdPeerPort := getEtcdPorts()
+	etcdClientPort := e.etcdClientPort
+	etcdPeerPort := e.etcdPeerPort
 	log.Infof("joinEtcdCluster on node with nodeID %s and nodeAddr %s", nodeID, nodeAddr)
 
 	leaderAddr, err := e.dockerOps.GetSwarmLeader()
@@ -290,7 +301,7 @@ func (e *EtcdKVS) joinEtcdCluster() error {
 		return err
 	}
 
-	etcd, err := addrToEtcdClient(leaderAddr)
+	etcd, err := e.addrToEtcdClient(leaderAddr)
 	if err != nil {
 		log.WithFields(
 			log.Fields{"nodeAddr": nodeAddr,
@@ -412,7 +423,7 @@ func (e *EtcdKVS) joinEtcdCluster() error {
 
 // leaveEtcdCluster function is called when a manager is demoted
 func (e *EtcdKVS) leaveEtcdCluster() error {
-	etcd, err := addrToEtcdClient(e.nodeAddr)
+	etcd, err := e.addrToEtcdClient(e.nodeAddr)
 	if err != nil {
 		log.WithFields(
 			log.Fields{"nodeAddr": e.nodeAddr,
@@ -436,7 +447,7 @@ func (e *EtcdKVS) leaveEtcdCluster() error {
 
 	// create the peer URL for filtering ETCD member information
 	// each ETCD member has a unique peer URL
-	_, etcdPeerPort := getEtcdPorts()
+	etcdPeerPort := e.etcdPeerPort
 	peerAddr := etcdScheme + e.nodeAddr + etcdPeerPort
 	for _, member := range lresp.Members {
 		// loop all current etcd members to find if there is already a member with the same peerAddr
@@ -519,7 +530,7 @@ func (e *EtcdKVS) checkLocalEtcd() error {
 		select {
 		case <-ticker.C:
 			log.Infof("Checking ETCD client is started")
-			cli, err := addrToEtcdClient(e.nodeAddr)
+			cli, err := e.addrToEtcdClient(e.nodeAddr)
 			if err != nil {
 				log.WithFields(
 					log.Fields{"nodeAddr": e.nodeAddr,
@@ -897,7 +908,7 @@ func (e *EtcdKVS) createEtcdClient() *etcdClient.Client {
 	}
 
 	for _, manager := range managers {
-		etcd, err := addrToEtcdClient(manager.Addr)
+		etcd, err := e.addrToEtcdClient(manager.Addr)
 		if err == nil {
 			return etcd
 		}
@@ -913,10 +924,10 @@ func (e *EtcdKVS) createEtcdClient() *etcdClient.Client {
 // addrToEtcdClient function create a new Etcd client according to the input docker address
 // it can be used by swarm worker to get a Etcd client on swarm manager
 // or it can be used by swarm manager to get a Etcd client on swarm leader
-func addrToEtcdClient(addr string) (*etcdClient.Client, error) {
+func (e *EtcdKVS) addrToEtcdClient(addr string) (*etcdClient.Client, error) {
 	// input address are RemoteManagers from docker info or ManagerStatus.Addr from docker inspect
 	// in the format of [host]:[docker manager port]
-	etcdClientPort, _ := getEtcdPorts()
+	etcdClientPort := e.etcdClientPort
 	s := strings.Split(addr, ":")
 	endpoint := s[0] + etcdClientPort
 	cfg := etcdClient.Config{
