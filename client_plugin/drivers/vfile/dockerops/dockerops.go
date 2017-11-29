@@ -199,11 +199,11 @@ func (d *DockerOps) VolumeInspect(volName string) error {
 //      string:  Name of the SMB service started
 //      bool:    Indicated success/failure of the function. If
 //               false, ignore other output values.
-func (d *DockerOps) StartSMBServer(volName string) (int, string, bool) {
+func (d *DockerOps) StartSMBServer(volName string, userName string) (int, string, bool) {
 	var service swarm.ServiceSpec
 	var options dockerTypes.ServiceCreateOptions
 
-	log.Infof("StartSMBServer for vol %s", volName)
+	log.Infof("StartSMBServer for vol %s with userName %s", volName, userName)
 	// Name of the service
 	service.Name = serviceNamePrefix + volName
 	// The Docker image to run in this service
@@ -221,11 +221,26 @@ func (d *DockerOps) StartSMBServer(volName string) (int, string, bool) {
 	                             Writelist: If RO, who can write on the share (root)
 	   * -u: Username and Password
 	*/
+	sambaAdminList := SambaUsername
+	sambaWOList := SambaUsername
+
+	// user specify a userName
+	if userName != SambaUsername {
+		sambaAdminList = sambaAdminList + "," + userName
+		sambaWOList = sambaWOList + "," + userName
+	}
 	containerArgs := []string{"-s",
 		FileShareName + ";/mount;yes;no;no;all;" +
-			SambaUsername + ";" + SambaUsername,
+			sambaAdminList + ";" + sambaWOList,
 		"-u",
 		SambaUsername + ";" + SambaPassword}
+
+	if userName != SambaUsername {
+		containerArgs = append(containerArgs, "-u", userName+";"+SambaPassword)
+	}
+
+	log.Infof("StartSMBServer: containerArgs=%s", containerArgs)
+
 	service.TaskTemplate.ContainerSpec.Args = containerArgs
 
 	// Mount a volume on service containers at mount point "/mount"
@@ -485,8 +500,8 @@ func (d *DockerOps) DeleteInternalVolume(volName string) {
 //      string:  Name of the SMB service. Set to empty.
 //      bool:    The result of the operation. True if the service was
 //               successfully stopped.
-func (d *DockerOps) StopSMBServer(volName string) (int, string, bool) {
-	log.Infof("StopSMBServer for vol %s", volName)
+func (d *DockerOps) StopSMBServer(volName string, userName string) (int, string, bool) {
+	log.Infof("StopSMBServer for vol %s with userName %s", volName, userName)
 	serviceID, _, err := d.getServiceIDAndPort(volName)
 	if err != nil {
 		return 0, "", false

@@ -97,6 +97,10 @@ type VolumeMetadata struct {
 	ServiceName    string            `json:"serviceName,omitempty"`
 	Username       string            `json:"username,omitempty"`
 	Password       string            `json:"password,omitempty"`
+	Uid            string            `json:"uid,omitempty"`
+	Gid            string            `json:"gid,omitempty"`
+	FileMode       string            `json:"fileMode,omitempty"`
+	DirMode        string            `json:"dirMode,omitempty"`
 }
 
 // NewVolumeDriver creates driver instance
@@ -264,13 +268,38 @@ func (d *VolumeDriver) Create(r volume.Request) volume.Response {
 	var msg string
 	var entries []kvstore.KvPair
 
+	sambaUsername, _ := r.Options["owner"]
+	sambaUid, _ := r.Options["owner_uid"]
+	sambaGid, _ := r.Options["owner_gid"]
+	sambaFileMode, _ := r.Options["file_mode"]
+	sambaDirMode, _ := r.Options["dir_mode"]
+
+	if sambaUsername == "" {
+		// user does not specify the "owner" option, use default user "root"
+		sambaUsername = dockerops.SambaUsername
+	}
+	log.Infof("Create: sambaUsername=%s, sambaUid=%s sambaGid=%s fileMode=%s, dirMode=%s \n",
+		sambaUsername, sambaUid, sambaGid, sambaFileMode, sambaDirMode)
+
+	// Delete keys from r.Options since backend plugin (vDVS) does not need
+	// vFile related options
+	delete(r.Options, "owner")
+	delete(r.Options, "owner_uid")
+	delete(r.Options, "owner_gid")
+	delete(r.Options, "file_mode")
+	delete(r.Options, "dir_mode")
+
 	// Initialize volume metadata in KV store
 	volRecord := VolumeMetadata{
 		Status:         kvstore.VolStateCreating,
 		GlobalRefcount: 0,
 		Port:           0,
-		Username:       dockerops.SambaUsername,
+		Username:       sambaUsername,
 		Password:       dockerops.SambaPassword,
+		Uid:            sambaUid,
+		Gid:            sambaGid,
+		FileMode:       sambaFileMode,
+		DirMode:        sambaDirMode,
 	}
 
 	// Append global refcount and status to kv pairs that will be written
@@ -607,6 +636,11 @@ func (d *VolumeDriver) MountVolume(name string, fstype string, id string, isRead
 		log.Fields{"name": name,
 			"Port":        volRecord.Port,
 			"ServiceName": volRecord.ServiceName,
+			"UserName":    volRecord.Username,
+			"Uid":         volRecord.Uid,
+			"Gid":         volRecord.Gid,
+			"FileMode":    volRecord.FileMode,
+			"DirMode":     volRecord.DirMode,
 		}).Info("Get info for mounting ")
 	err = d.mountVFileVolume(name, mountpoint, &volRecord)
 	if err != nil {
@@ -644,7 +678,28 @@ func (d *VolumeDriver) mountVFileVolume(volName string, mountpoint string, volRe
 		"port=" + strconv.Itoa(volRecord.Port),
 		"vers=3.0",
 	}
-	mountArgs = append(mountArgs, "-o", strings.Join(options, ","))
+
+	// add mount option --uid if usern has specified
+	if volRecord.Uid != "" {
+		options = append(options, "uid="+volRecord.Uid)
+	}
+
+	// add mount option --gid if user has specified
+	if volRecord.Gid != "" {
+		options = append(options, "gid="+volRecord.Gid)
+	}
+
+	// add mount option --file_mode if user has specified
+	if volRecord.FileMode != "" {
+		options = append(options, "file_mode="+volRecord.FileMode)
+	}
+
+	// add mount option --dir_mode if user has specified
+	if volRecord.DirMode != "" {
+		options = append(options, "dir_mode="+volRecord.DirMode)
+	}
+
+	mountArgs = append(mountArgs, "-v", "-o", strings.Join(options, ","))
 
 	source := "//127.0.0.1/" + dockerops.FileShareName
 	mountArgs = append(mountArgs, source)

@@ -97,6 +97,10 @@ type VFileVolConnectivityData struct {
 	ServiceName string `json:"serviceName,omitempty"`
 	Username    string `json:"username,omitempty"`
 	Password    string `json:"password,omitempty"`
+	Uid         string `json:"uid,omitempty"`
+	Gid         string `json:"gid,omitempty"`
+	FileMode    string `json:"fileMode,omitempty"`
+	DirMode     string `json:"dirMode,omitempty"`
 }
 
 // NewKvStore function: start or join ETCD cluster depending on the role of the node
@@ -645,7 +649,7 @@ func (e *EtcdKVS) cleanOrphanService(volumesToVerify []string) {
 		if !found ||
 			state == string(kvstore.VolStateDeleting) {
 			log.Warningf("The service for vFile volume %s needs to be shutdown.", volName)
-			e.dockerOps.StopSMBServer(volName)
+			e.dockerOps.StopSMBServer(volName, "")
 		}
 	}
 }
@@ -658,7 +662,7 @@ func (e *EtcdKVS) etcdEventHandler(ev *etcdClient.Event) {
 
 	nested := func(key string, fromState kvstore.VolStatus,
 		toState kvstore.VolStatus, interimState kvstore.VolStatus,
-		fn func(string) (int, string, bool)) {
+		fn func(string, string) (int, string, bool)) {
 
 		// watcher observes global refcount critical change
 		// transactional edit state first
@@ -670,47 +674,52 @@ func (e *EtcdKVS) etcdEventHandler(ev *etcdClient.Event) {
 			return
 		}
 
-		port, servName, succeeded := fn(volName)
+		var entries []kvstore.KvPair
+		var writeEntries []kvstore.KvPair
+		var volRecord VFileVolConnectivityData
+
+		// Port, Server name, Client list, Samba
+		// username/password are in the same key.
+		// Must fetch this key to know the value
+		// of other fields before rewriting them.
+		keys := []string{
+			kvstore.VolPrefixInfo + volName,
+		}
+		entries, err := e.ReadMetaData(keys)
+		if err != nil {
+			// Failed to fetch existing metadata on the volume
+			// Set volume state to error as we cannot
+			// proceed
+			log.Warningf("Failed to read volume metadata before updating port information: %v",
+				err)
+			e.CompareAndPut(kvstore.VolPrefixState+volName,
+				string(interimState),
+				string(kvstore.VolStateError))
+			return
+		}
+		err = json.Unmarshal([]byte(entries[0].Value), &volRecord)
+		if err != nil {
+			// Failed to unmarshal record from JSON
+			// Set volume state to error as we cannot
+			// proceed
+			log.Warningf("Failed to unmarshal JSON for reading existing metadata: %v",
+				err)
+			e.CompareAndPut(kvstore.VolPrefixState+volName,
+				string(interimState),
+				string(kvstore.VolStateError))
+			return
+		}
+
+		log.Infof("EtcdEventHandler: sambaUserName=%s, uid=%s, gid=%s, file_mode=%s dir_mode=%s",
+			volRecord.Username, volRecord.Uid, volRecord.Gid, volRecord.FileMode, volRecord.DirMode)
+
+		port, servName, succeeded := fn(volName, volRecord.Username)
 		if succeeded {
 			// Either starting or stopping SMB
 			// server succeeded.
 			// Update volume metadata to reflect
 			// port number and file service name.
-			var entries []kvstore.KvPair
-			var writeEntries []kvstore.KvPair
-			var volRecord VFileVolConnectivityData
 
-			// Port, Server name, Client list, Samba
-			// username/password are in the same key.
-			// Must fetch this key to know the value
-			// of other fields before rewriting them.
-			keys := []string{
-				kvstore.VolPrefixInfo + volName,
-			}
-			entries, err := e.ReadMetaData(keys)
-			if err != nil {
-				// Failed to fetch existing metadata on the volume
-				// Set volume state to error as we cannot
-				// proceed
-				log.Warningf("Failed to read volume metadata before updating port information: %v",
-					err)
-				e.CompareAndPut(kvstore.VolPrefixState+volName,
-					string(interimState),
-					string(kvstore.VolStateError))
-				return
-			}
-			err = json.Unmarshal([]byte(entries[0].Value), &volRecord)
-			if err != nil {
-				// Failed to unmarshal record from JSON
-				// Set volume state to error as we cannot
-				// proceed
-				log.Warningf("Failed to unmarshal JSON for reading existing metadata: %v",
-					err)
-				e.CompareAndPut(kvstore.VolPrefixState+volName,
-					string(interimState),
-					string(kvstore.VolStateError))
-				return
-			}
 			// Rewrite the port number and service name
 			// then marshal the data structure to JSON again.
 			volRecord.Port = port
