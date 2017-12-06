@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source ../misc/scripts/commands.sh
 filename=$1
 
 i=0
 idx=0
-while read -r line
+while IFS= read -r line || [ -n "$line" ]
 do
     echo $i
     if [ $i == 0 ]
@@ -32,26 +33,27 @@ do
         MGR_COUNT=$line
         echo "MGR_COUNT $MGR_COUNT"
     fi
-    if [ $i > 1 ]
+    if [ "$i" -gt "1" ]
     then
         # Read IP address in to array
         # In the configuration file, the first $MGR_COUNT line of IP address
         # will be the IP address of swarm manager node
         IP_ADDRESS[idx]=$line
+        echo "idx $idx"
         idx=$((idx+1))
     fi
     i=$((i+1))
-done < $filename
+done <$1
 
-IP_COUNT=${#IP_ADDRESS[@]}
+IP_COUNT=$idx
 
-echo "IP_COUNT $IP_ADDRESS"
+echo "IP_COUNT $IP_COUNT"
 
-# if [ $MGR_COUNT \> $NODE_COUNT ]
-# then
-#     echo "Total number of nodes cannot be smaller than the total number of manager nodes"
-#     exit 1
-# fi
+ if [ "$MGR_COUNT" -gt "$NODE_COUNT" ]
+ then
+     echo "Total number of nodes cannot be smaller than the total number of manager nodes"
+     exit 1
+ fi
 
 if [ $((MGR_COUNT%2)) -eq 0 ]
 then
@@ -59,15 +61,48 @@ then
     exit 1
 fi
 
-if [ $MGR_COUNT > 7 ]
+if [ "$MGR_COUNT" -gt "7" ]
 then
     echo "Total number of manager in the swarm cluster is too big"
     exit 1
 fi
 
-if [ $NODE_COUNT != $IP_COUNT]
+if [ $NODE_COUNT != $IP_COUNT ]
 then
     echo "Total number of nodes does not match the number of IP addresses"
     exit 1
 fi
 
+echo "Swarm Cluster Setup Start"
+
+echo "======> Initializing first swarm manager ..."
+echo $SSH
+ssh root@${IP_ADDRESS[0]}  "docker swarm init"
+
+# Fetch Tokens
+ManagerToken=`ssh root@${IP_ADDRESS[0]} docker swarm join-token manager | grep token`
+WorkerToken=`ssh root@${IP_ADDRESS[0]} docker swarm join-token worker | grep token`
+
+echo "Manager Token: ${ManagerToken}"
+echo "Workder Token: ${WorkerToken}"
+
+# Add remaining manager to swarm
+echo "======> Add other manager nodes"
+for i in `seq 1 $((MGR_COUNT-1))`
+do
+    echo "node with IP ${IP_ADDRESS[$i]} joins swarm as a Manager"
+    ssh root@${IP_ADDRESS[$i]} ${ManagerToken}
+done
+
+# Add worker to swarm
+echo "======> Add worker nodes"
+for i in `seq $((MGR_COUNT)) $((NODE_COUNT-1))`
+do
+     echo "node with IP ${IP_ADDRESS[$i]} joins swarm as a Worker"
+     ssh root@${IP_ADDRESS[$i]} ${WorkerToken}
+done
+
+# list nodes in swarm cluster
+ssh root@${IP_ADDRESS[0]} "docker node ls"
+
+echo "Swarm Cluster Setup Complete"
