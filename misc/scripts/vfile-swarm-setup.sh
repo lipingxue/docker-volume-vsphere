@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source ../misc/scripts/commands.sh
+#source ../misc/scripts/commands.sh
+source commands.sh
 filename=$1
 
 i=0
@@ -76,12 +77,11 @@ fi
 echo "Swarm Cluster Setup Start"
 
 echo "======> Initializing first swarm manager ..."
-echo $SSH
-ssh root@${IP_ADDRESS[0]}  "docker swarm init"
+$SSH root@${IP_ADDRESS[0]}  "docker swarm init"
 
 # Fetch Tokens
-ManagerToken=`ssh root@${IP_ADDRESS[0]} docker swarm join-token manager | grep token`
-WorkerToken=`ssh root@${IP_ADDRESS[0]} docker swarm join-token worker | grep token`
+ManagerToken=`$SSH root@${IP_ADDRESS[0]} docker swarm join-token manager | grep token`
+WorkerToken=`$SSH root@${IP_ADDRESS[0]} docker swarm join-token worker | grep token`
 
 echo "Manager Token: ${ManagerToken}"
 echo "Workder Token: ${WorkerToken}"
@@ -91,7 +91,7 @@ echo "======> Add other manager nodes"
 for i in `seq 1 $((MGR_COUNT-1))`
 do
     echo "node with IP ${IP_ADDRESS[$i]} joins swarm as a Manager"
-    ssh root@${IP_ADDRESS[$i]} ${ManagerToken}
+    $SSH root@${IP_ADDRESS[$i]} ${ManagerToken}
 done
 
 # Add worker to swarm
@@ -99,10 +99,10 @@ echo "======> Add worker nodes"
 for i in `seq $((MGR_COUNT)) $((NODE_COUNT-1))`
 do
      echo "node with IP ${IP_ADDRESS[$i]} joins swarm as a Worker"
-     ssh root@${IP_ADDRESS[$i]} ${WorkerToken}
+     $SSH root@${IP_ADDRESS[$i]} ${WorkerToken}
 done
 
 # list nodes in swarm cluster
-ssh root@${IP_ADDRESS[0]} "docker node ls"
+$SSH root@${IP_ADDRESS[0]} "docker node ls"
 
 echo "Swarm Cluster Setup Complete"
