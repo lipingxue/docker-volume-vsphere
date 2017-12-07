@@ -21,7 +21,6 @@ i=0
 idx=0
 while IFS= read -r line || [ -n "$line" ]
 do
-    echo $i
     if [ $i == 0 ]
     then
         # NODE_COUNT is the total number of nodes that in the swarm cluster
@@ -40,7 +39,6 @@ do
         # In the configuration file, the first $MGR_COUNT line of IP address
         # will be the IP address of swarm manager node
         IP_ADDRESS[idx]=$line
-        echo "idx $idx"
         idx=$((idx+1))
     fi
     i=$((i+1))
