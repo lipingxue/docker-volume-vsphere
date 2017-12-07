@@ -41,7 +41,7 @@ A sample configuration file can be found [here] (https://github.com/vmware/docke
 You need to setup SSH keys for `root` user on all hosts. Then run the following command to configure a Swarm cluster:
 
 ```
-lipingx-m01:scripts lipingx$ ./vfile-swarm-setup.sh vfile-swarm-config.txt
+~$ ./vfile-swarm-setup.sh vfile-swarm-config.txt
 NODE_COUNT  5
 MGR_COUNT 3
 IP_COUNT 5
