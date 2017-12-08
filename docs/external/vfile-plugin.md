@@ -26,14 +26,17 @@ Detailed documentation can be found on our [GitHub Documentation Page](http://vm
 * All docker swarm managers should open [official etcd ports](http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt) 2379 and 2380, or the user-defined ETCD ports (please find more details about user-defined ETCD ports in the Installation section)
 
 ## Installation
-vFile requires all hosts running in Swarm mode, you can use this [script] (https://github.com/vmware/docker-volume-vsphere/tree/master/misc/scripts/vfile-swarm-setup.sh) to setup all hosts in Swarm mode. This script takes a configuration file as parameter. The configuration file has the following format:
+vFile requires all hosts running in swarm mode, you can use this [script] (https://github.com/vmware/docker-volume-vsphere/tree/master/misc/scripts/vfile-swarm-setup.sh) to setup all hosts in swarm mode. This script takes a configuration file as parameter. The configuration file has the following format(Assume the total number of nodes is `n` and the total numer of manager node is `m`):
 ```
 Number of all nodes
 Number of Swarm manager nodes
-IP address of node 1
-IP address of node 2
+IP address of manager node 1
+IP address of manager node 2
 ...
-IP address of node n
+IP address of manager node m
+IP address of worker node 1
+...
+IP address of worker node n-m
 ```
 
 A sample configuration file can be found [here] (https://github.com/vmware/docker-volume-vsphere/tree/master/misc/scripts/vfile-swarm-config.txt)
@@ -42,39 +45,6 @@ You need to setup SSH keys for `root` user on all hosts. Then run the following 
 
 ```
 ~$ ./vfile-swarm-setup.sh vfile-swarm-config.txt
-NODE_COUNT  5
-MGR_COUNT 3
-IP_COUNT 5
-Swarm Cluster Setup Start
-======> Initializing first swarm manager ...
-Swarm initialized: current node (uxjj0pyj4ihgh0pholgbxyl0x) is now a manager.
-
-To add a worker to this swarm, run the following command:
-
-    docker swarm join --token SWMTKN-1-5ns9eimyctvqrygj5vc3jc4ly6vlxeefabnr9awl6eq70vy1he-7qf0y4gs60eoxyghzm1omyrdx 10.161.101.247:2377
-
-To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
-
-Manager Token:     docker swarm join --token SWMTKN-1-5ns9eimyctvqrygj5vc3jc4ly6vlxeefabnr9awl6eq70vy1he-2woxasvp9o78hchikjmc3h4hx 10.161.101.247:2377
-Workder Token:     docker swarm join --token SWMTKN-1-5ns9eimyctvqrygj5vc3jc4ly6vlxeefabnr9awl6eq70vy1he-7qf0y4gs60eoxyghzm1omyrdx 10.161.101.247:2377
-======> Add other manager nodes
-node with IP 10.161.98.108 joins swarm as a Manager
-This node joined a swarm as a manager.
-node with IP 10.161.121.202 joins swarm as a Manager
-This node joined a swarm as a manager.
-======> Add worker nodes
-node with IP 10.161.103.9 joins swarm as a Worker
-This node joined a swarm as a worker.
-node with IP 10.161.120.96 joins swarm as a Worker
-This node joined a swarm as a worker.
-ID                            HOSTNAME                   STATUS              AVAILABILITY        MANAGER STATUS
-3a287srqd2as2rgpjf8798chi     sc-rdops-vm18-dhcp-57-89   Ready               Active
-nblusvsz8nhpxmgw6ivnp8r3l     sc-rdops-vm18-dhcp-57-89   Ready               Active              Reachable
-uxjj0pyj4ihgh0pholgbxyl0x *   sc-rdops-vm18-dhcp-57-89   Ready               Active              Leader
-wnfbki9toif22wto62m1yn36q     sc-rdops-vm18-dhcp-57-89   Ready               Active              Reachable
-zmzw1fh6b8ma2vphvsk9i4uzp     sc-rdops-vm18-dhcp-57-89   Ready               Active
-Swarm Cluster Setup Complete
-
 ```
 
 The recommended way to install vFile plugin is from docker cli:

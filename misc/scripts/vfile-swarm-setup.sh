@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2016 VMware, Inc. All Rights Reserved.
+# Copyright 2017 VMware, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,15 +24,28 @@ do
     if [ $i == 0 ]
     then
         # NODE_COUNT is the total number of nodes that in the swarm cluster
-        NODE_COUNT=$line
-        echo "NODE_COUNT  $NODE_COUNT"
+        if [[ $line =~ ^-?[0-9]+$ ]]
+        then
+            NODE_COUNT=$line
+            echo "NODE_COUNT=$NODE_COUNT"
+        else
+            echo "Invalid value for NODE_COUNT=$line"
+            exit 1
+        fi
     fi
     if [ $i == 1 ]
     then
         # MGR_COUNT is the total number of manager nodes in the swarm cluster
-        MGR_COUNT=$line
-        echo "MGR_COUNT $MGR_COUNT"
+        if [[ $line =~ ^-?[0-9]+$ ]]
+        then
+            MGR_COUNT=$line
+            echo "MGR_COUNT=$MGR_COUNT"
+        else
+            echo "Invalid value for MGR_COUNT=$line"
+            exit 1
+        fi
     fi
+
     if [ "$i" -gt "1" ]
     then
         # Read IP address in to array
