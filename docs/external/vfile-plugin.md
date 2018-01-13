@@ -28,8 +28,8 @@ Detailed documentation can be found on our [GitHub Documentation Page](http://vm
 ## Installation
 vFile requires all hosts running in swarm mode, you can use this [script] (https://github.com/vmware/docker-volume-vsphere/tree/master/misc/scripts/vfile-swarm-setup.sh) to setup all hosts in swarm mode. This script takes a configuration file as parameter. The configuration file has the following format(Assume the total number of nodes is `n` and the total numer of manager node is `m`):
 ```
-Number of all nodes
-Number of Swarm manager nodes
+NODE_COUNT=n
+MGR_COUNT=m
 IP address of manager node 1
 IP address of manager node 2
 ...

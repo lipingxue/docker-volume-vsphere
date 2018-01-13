@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#source ../misc/scripts/commands.sh
 source commands.sh
 filename=$1
 
@@ -24,24 +23,24 @@ do
     if [ $i == 0 ]
     then
         # NODE_COUNT is the total number of nodes that in the swarm cluster
-        if [[ $line =~ ^-?[0-9]+$ ]]
+        if [[ $line =~ ^NODE_COUNT=-?[0-9]+$ ]]
         then
-            NODE_COUNT=$line
+            NODE_COUNT="${line#*=}"
             echo "NODE_COUNT=$NODE_COUNT"
         else
-            echo "Invalid value for NODE_COUNT=$line"
+            echo "Invalid value for NODE_COUNT:$line"
             exit 1
         fi
     fi
     if [ $i == 1 ]
     then
         # MGR_COUNT is the total number of manager nodes in the swarm cluster
-        if [[ $line =~ ^-?[0-9]+$ ]]
+        if [[ $line =~ ^MGR_COUNT=-?[0-9]+$ ]]
         then
-            MGR_COUNT=$line
+            MGR_COUNT="${line#*=}"
             echo "MGR_COUNT=$MGR_COUNT"
         else
-            echo "Invalid value for MGR_COUNT=$line"
+            echo "Invalid value for MGR_COUNT:$line"
             exit 1
         fi
     fi
