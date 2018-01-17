@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script is used to set up a swarm cluster which is needed by vFile
+# More information:https://github.com/vmware/vsphere-storage-for-docker/tree/master/docs/external/vfile-plugin.md#installation
+
 source commands.sh
 filename=$1
 
